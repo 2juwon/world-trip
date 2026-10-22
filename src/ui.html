@@ -1,0 +1,1316 @@
+<title>한판 세계여행</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gothic+A1:wght@400;600;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 항공우편 봉투 위에 펼친 세계여행 판 — 위: 여행자 띠, 가운데: 판(가운데에 주사위·소식), 아래: 할 일. 넓은 화면은 오른쪽 패널 */
+:root{
+  --sky:#dde6ee; --sky-2:#cfdbe6; --paper:#fbfaf5; --paper-2:#f1efe6; --line:#c9cfd6;
+  --ink:#16223a; --ink-soft:#5b6779; --air-red:#cf3239; --air-blue:#23489a; --gold:#d69e17; --gold-ink:#5a3d00;
+  --s0:#e0703a; --s1:#22968a; --s2:#c08e00; --s3:#6b4fc4;
+  --p0:#e5484d; --p1:#2563eb; --p2:#139a4a; --p3:#e58a00;
+  --ok:#1d8a52; --warn:#c2410c; --panel:#ffffff; --panel-line:#d6dde5; --veil:rgba(14,22,38,.45);
+  --shadow:0 1px 0 rgba(20,34,58,.08), 0 10px 26px rgba(20,34,58,.14);
+  --f-display:"Black Han Sans","Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --sky:#0d1726; --sky-2:#132034; --paper:#1a2639; --paper-2:#213049; --line:#33445e;
+  --ink:#e8eef6; --ink-soft:#9fb0c6; --air-red:#e0525a; --air-blue:#5b84d6; --gold:#e8b43a; --gold-ink:#3a2700;
+  --s0:#f08a57; --s1:#3fb6a8; --s2:#d8a91c; --s3:#9a82ec;
+  --p0:#ff6b70; --p1:#5b93ff; --p2:#2fc46c; --p3:#ffa62b;
+  --ok:#3fbf7f; --warn:#fb8a4c; --panel:#18233a; --panel-line:#2c3c55; --veil:rgba(0,0,0,.6);
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.45);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --sky:#0d1726; --sky-2:#132034; --paper:#1a2639; --paper-2:#213049; --line:#33445e;
+  --ink:#e8eef6; --ink-soft:#9fb0c6; --air-red:#e0525a; --air-blue:#5b84d6; --gold:#e8b43a; --gold-ink:#3a2700;
+  --s0:#f08a57; --s1:#3fb6a8; --s2:#d8a91c; --s3:#9a82ec;
+  --p0:#ff6b70; --p1:#5b93ff; --p2:#2fc46c; --p3:#ffa62b;
+  --ok:#3fbf7f; --warn:#fb8a4c; --panel:#18233a; --panel-line:#2c3c55; --veil:rgba(0,0,0,.6);
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.45);
+  color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--sky); color:var(--ink); font-family:var(--f-body); font-size:15px; -webkit-tap-highlight-color:transparent; overflow-x:hidden;
+  background-image:radial-gradient(var(--sky-2) 1.2px, transparent 1.3px); background-size:18px 18px}
+button{font:inherit; color:inherit; cursor:pointer}
+button:disabled{cursor:default; opacity:.45}
+:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+.num{font-family:var(--f-num); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+
+.app{min-height:100%; box-sizing:border-box; max-width:1180px; margin:0 auto; display:grid; gap:10px; align-content:start;
+  padding-block:10px 16px; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px));
+  grid-template-areas:"top" "ppl" "board" "act" "log"}
+@media (min-width:920px){ .app{grid-template-columns:minmax(0,1fr) 340px; grid-template-areas:"top top" "board ppl" "board act" "board log"; grid-template-rows:auto auto auto 1fr} }
+.top{grid-area:top; display:flex; align-items:center; gap:8px}
+.logo{white-space:nowrap; font-family:var(--f-display); font-size:clamp(20px, 5.4vw, 26px); line-height:1; letter-spacing:.01em; display:flex; align-items:center; gap:8px}
+.logo .stamp{width:30px; height:30px; flex:none}
+.top .sp{flex:1}
+.clock{font-family:var(--f-num); font-size:12px; color:var(--ink-soft); text-align:right; line-height:1.25}
+.iconbtn{width:40px; height:40px; border-radius:12px; border:1px solid var(--panel-line); background:var(--panel); display:grid; place-items:center; flex:none}
+.iconbtn svg{width:20px; height:20px; stroke:var(--ink); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+
+/* 여행자 띠 */
+.ppl{grid-area:ppl; display:grid; grid-template-columns:repeat(var(--n,2), minmax(0,1fr)); gap:6px}
+@media (min-width:920px){ .ppl{grid-template-columns:1fr 1fr} }
+.pp{--c:var(--p0); position:relative; background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:7px 8px 7px 10px; min-width:0; display:grid; gap:1px; transition:transform .2s, box-shadow .2s; overflow:hidden}
+.pp::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--c)}
+.pp .nm{font-weight:800; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px; min-width:0}
+.pp .nm i{font-style:normal; font-weight:600; font-size:10.5px; color:var(--ink-soft)}
+.pp .money{font-family:var(--f-num); font-weight:600; font-size:clamp(11.5px, 3.2vw, 14.5px); font-variant-numeric:tabular-nums; white-space:nowrap}
+.pp .tags{display:flex; gap:3px; flex-wrap:wrap; min-height:15px}
+.tag{font-size:10px; font-weight:700; padding:1px 5px; border-radius:6px; background:var(--paper-2); color:var(--ink-soft); white-space:nowrap}
+.tag.gold{background:var(--gold); color:var(--gold-ink)}
+.tag.red{background:var(--air-red); color:#fff}
+.pp.on{box-shadow:0 0 0 2px var(--c), var(--shadow); transform:translateY(-1px)}
+.pp.out{opacity:.45}
+.pp.out .money{text-decoration:line-through}
+.pp .tok{width:14px; height:14px; border-radius:50%; background:var(--c); flex:none; box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.pp .say{position:absolute; right:6px; top:4px; background:var(--ink); color:var(--paper); font-size:11px; padding:2px 7px; border-radius:9px; max-width:70%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pp .bar{position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--c); transform-origin:left; opacity:.8}
+
+/* 판 */
+.boardwrap{grid-area:board; justify-self:center; width:min(100%, 760px); min-width:0}
+@media (min-width:920px){ .boardwrap{width:min(100%, calc(100vh - 90px), 820px); justify-self:stretch} }
+.envelope{padding:7px; border-radius:14px; box-shadow:var(--shadow);
+  background:repeating-linear-gradient(-45deg, var(--air-red) 0 12px, var(--paper) 12px 20px, var(--air-blue) 20px 32px, var(--paper) 32px 40px)}
+.board{position:relative; aspect-ratio:1; max-width:100%; background:var(--paper); border-radius:8px; display:grid;
+  grid-template-columns:1.45fr repeat(9, 1fr) 1.45fr; grid-template-rows:1.45fr repeat(9, 1fr) 1.45fr; overflow:hidden}
+.tile{position:relative; border:.5px solid var(--line); margin:-.25px; background:var(--paper); padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; overflow:hidden; min-width:0; min-height:0; line-height:1.05; font-size:clamp(7.5px, 1.6vw, 12.5px)}
+.tile .band{position:absolute; background:var(--sc)}
+.tile.b-top .band{left:0; right:0; top:0; height:18%}
+.tile.b-bottom .band{left:0; right:0; bottom:0; height:18%}
+.tile.b-left .band{top:0; bottom:0; left:0; width:18%}
+.tile.b-right .band{top:0; bottom:0; right:0; width:18%}
+.tile .tn{font-weight:800; word-break:keep-all; overflow-wrap:anywhere; padding:0 2px; position:relative; z-index:1}
+.tile .tp{font-family:var(--f-num); font-size:.82em; color:var(--ink-soft); margin-top:2px; position:relative; z-index:1}
+.tile.b-top{padding-top:12%} .tile.b-bottom{padding-bottom:12%} .tile.b-left{padding-left:14%} .tile.b-right{padding-right:14%}
+.tile.owned{background:color-mix(in srgb, var(--oc) 16%, var(--paper))}
+.tile.owned .tp{color:var(--oc); font-weight:600}
+.tile .own{position:absolute; width:15%; aspect-ratio:1; border-radius:50%; background:var(--oc); z-index:2; box-shadow:0 0 0 1.5px var(--paper)}
+.tile.b-top .own{right:3%; bottom:3%} .tile.b-bottom .own{right:3%; top:3%} .tile.b-left .own{right:3%; bottom:5%} .tile.b-right .own{left:3%; bottom:5%}
+.tile .bld{position:absolute; display:flex; gap:1px; z-index:2; align-items:flex-end}
+.tile.b-top .bld{left:0; right:0; top:1%; height:16%; justify-content:center}
+.tile.b-bottom .bld{left:0; right:0; bottom:1%; height:16%; justify-content:center}
+.tile.b-left .bld{top:0; bottom:0; left:1%; width:16%; flex-direction:column; justify-content:center; align-items:center}
+.tile.b-right .bld{top:0; bottom:0; right:1%; width:16%; flex-direction:column; justify-content:center; align-items:center}
+.tile .bld svg{width:clamp(6px,1.5vw,12px); height:clamp(6px,1.5vw,12px); fill:var(--paper); stroke:var(--ink); stroke-width:1.4}
+.tile.corner{font-size:clamp(8px, 1.8vw, 14px)}
+.tile.corner svg.ic{width:46%; height:46%; stroke:var(--ink); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
+.tile svg.ic{width:52%; height:42%; stroke:var(--ink); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; position:relative; z-index:1}
+.tile.key{background:color-mix(in srgb, var(--gold) 22%, var(--paper))}
+.tile.key svg.ic{stroke:var(--gold-ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tile.key svg.ic{stroke:var(--gold)}}
+:root[data-theme="dark"] .tile.key svg.ic{stroke:var(--gold)}
+.tile.pick{cursor:pointer}
+.tile.pick:hover{outline:2px solid var(--ok); outline-offset:-2px; z-index:3}
+.tile.sel{outline:3px solid var(--ok); outline-offset:-3px; z-index:3}
+.tile.flash{animation:flash .7s ease-out}
+@keyframes flash{0%{box-shadow:inset 0 0 0 40px color-mix(in srgb, var(--gold) 70%, transparent)}100%{box-shadow:inset 0 0 0 0 transparent}}
+.tile.here{box-shadow:inset 0 0 0 2px var(--hc)}
+.tile:focus-visible{z-index:4}
+
+.center{grid-row:2/11; grid-column:2/11; position:relative; display:grid; place-items:center; padding:4%; box-sizing:border-box; min-width:0; min-height:0;
+  background:radial-gradient(color-mix(in srgb, var(--air-blue) 14%, transparent) 1px, transparent 1.2px) 0 0/10px 10px}
+.cin{display:grid; justify-items:center; gap:clamp(4px,1.4vw,12px); width:100%; text-align:center}
+.mark{font-family:var(--f-display); font-size:clamp(18px, 5vw, 40px); color:color-mix(in srgb, var(--air-blue) 70%, var(--paper)); letter-spacing:.02em; line-height:1}
+.mark small{display:block; font-family:var(--f-num); font-size:.32em; letter-spacing:.3em; margin-top:4px; color:var(--ink-soft)}
+.dice{display:flex; gap:clamp(6px,2vw,14px)}
+.die{width:clamp(34px, 9vw, 64px); aspect-ratio:1; border-radius:22%; background:var(--panel); border:1.5px solid var(--ink); box-shadow:0 3px 0 var(--ink); display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); padding:14%; box-sizing:border-box}
+.die i{width:70%; aspect-ratio:1; border-radius:50%; background:var(--ink); place-self:center; visibility:hidden}
+.die.dbl{border-color:var(--air-red); box-shadow:0 3px 0 var(--air-red)}
+.die.dbl i{background:var(--air-red)}
+.die.shake{animation:shake .12s linear infinite}
+@keyframes shake{0%{transform:rotate(-8deg) translateY(-2px)}50%{transform:rotate(8deg) translateY(1px)}100%{transform:rotate(-8deg) translateY(-2px)}}
+.news{word-break:keep-all; font-weight:700; font-size:clamp(12px, 2.6vw, 16px); min-height:2.6em; max-width:92%; text-wrap:balance; line-height:1.3}
+.news b{color:var(--nc, var(--ink))}
+.facts{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; font-size:clamp(10px,2vw,12.5px); color:var(--ink-soft)}
+.facts span{background:var(--panel); border:1px solid var(--panel-line); border-radius:8px; padding:2px 7px; white-space:nowrap}
+.facts b{font-family:var(--f-num); color:var(--ink)}
+
+/* 황금열쇠 카드 */
+.keycard{position:absolute; inset:12% 14%; display:grid; place-items:center; z-index:6; pointer-events:auto}
+.keycard .kc{width:min(100%, 280px); background:linear-gradient(160deg, color-mix(in srgb, var(--gold) 82%, #fff), var(--gold)); color:var(--gold-ink); border-radius:14px; padding:14px 16px; box-shadow:0 14px 34px rgba(0,0,0,.3); text-align:center; display:grid; gap:6px; animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+.keycard .kc small{font-family:var(--f-num); font-size:11px; letter-spacing:.2em}
+.keycard .kc h3{margin:0; font-family:var(--f-display); font-size:clamp(20px, 5vw, 28px); font-weight:400}
+.keycard .kc p{margin:0; font-size:13.5px; line-height:1.45; font-weight:600}
+@keyframes cardin{from{transform:rotateY(80deg) scale(.7); opacity:0} to{transform:none; opacity:1}}
+
+/* 말 */
+.toks{position:absolute; inset:0; pointer-events:none; z-index:5}
+.tk{position:absolute; width:4.2%; aspect-ratio:1; border-radius:50% 50% 50% 0; transform:translate(-50%,-100%) rotate(-45deg); background:var(--c); box-shadow:0 0 0 2px var(--paper), 0 3px 6px rgba(0,0,0,.35); transition:left .11s linear, top .11s linear}
+.tk::after{content:""; position:absolute; inset:28%; border-radius:50%; background:var(--paper)}
+.tk.fly{transition:left .7s cubic-bezier(.45,0,.3,1), top .7s cubic-bezier(.45,0,.3,1)}
+.tk.on{z-index:2; animation:bob 1s ease-in-out infinite}
+@keyframes bob{50%{margin-top:-4px}}
+.fl{position:absolute; z-index:9; font-family:var(--f-num); font-weight:600; font-size:13px; padding:1px 6px; border-radius:8px; pointer-events:none; white-space:nowrap; animation:floatup 1.3s ease-out forwards}
+.fl.plus{background:var(--ok); color:#fff} .fl.minus{background:var(--air-red); color:#fff}
+@keyframes floatup{from{transform:translate(-50%,0); opacity:1} to{transform:translate(-50%,-26px); opacity:0}}
+
+/* 할 일 */
+.act{grid-area:act; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:12px; display:grid; gap:10px; box-shadow:var(--shadow); min-width:0}
+.act h2{margin:0; font-size:16px; display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+.act h2 .dot{width:12px; height:12px; border-radius:50%; background:var(--c)}
+.act p{margin:0; color:var(--ink-soft); font-size:13.5px; line-height:1.45}
+.act .row{display:flex; gap:8px; flex-wrap:wrap}
+.btn{border:1px solid var(--panel-line); background:var(--paper-2); border-radius:12px; padding:11px 14px; font-weight:700; font-size:15px; min-height:46px}
+.btn.main{background:var(--air-blue); border-color:var(--air-blue); color:#fff}
+.btn.red{background:var(--air-red); border-color:var(--air-red); color:#fff}
+.btn.gold{background:var(--gold); border-color:var(--gold); color:var(--gold-ink)}
+.btn.grow{flex:1}
+.btn small{display:block; font-family:var(--f-num); font-weight:500; font-size:12px; opacity:.85}
+.offer{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:13.5px; align-items:center}
+.offer dt{color:var(--ink-soft)} .offer dd{margin:0; font-family:var(--f-num); font-weight:600}
+.opts{display:grid; gap:6px}
+.opt{display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:left; width:100%}
+.opt span:last-child{font-family:var(--f-num); font-size:12.5px; font-weight:500; text-align:right}
+.timer{height:4px; background:var(--paper-2); border-radius:3px; overflow:hidden}
+.timer i{display:block; height:100%; background:var(--air-blue); transform-origin:left}
+.timer.hurry i{background:var(--air-red)}
+
+/* 기록 */
+.log{grid-area:log; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:10px 12px; font-size:12.5px; color:var(--ink-soft); max-height:220px; overflow:auto; min-width:0}
+.log h3{margin:0 0 6px; font-size:12px; letter-spacing:.08em; color:var(--ink)}
+.log ol{list-style:none; margin:0; padding:0; display:grid; gap:3px}
+.log li b{color:var(--c, var(--ink))}
+@media (max-width:919px){ .log{max-height:150px} }
+
+/* 시트 */
+.veil{position:fixed; inset:0; background:var(--veil); z-index:50; display:grid; align-items:end; justify-items:center; animation:fade .2s}
+@media (min-width:640px){ .veil{align-items:center} }
+@keyframes fade{from{opacity:0}}
+.sheet{background:var(--panel); color:var(--ink); width:min(100%, 560px); max-height:92vh; overflow:auto; border-radius:18px 18px 0 0; box-sizing:border-box;
+  padding:18px max(16px, env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left,0px)); box-shadow:var(--shadow)}
+@media (min-width:640px){ .sheet{border-radius:18px} }
+.sheet h2{margin:0 0 10px; font-family:var(--f-display); font-weight:400; font-size:24px}
+.sheet h3{margin:16px 0 7px; font-size:13px; letter-spacing:.04em; color:var(--ink-soft)}
+.sheet p{line-height:1.55; margin:6px 0}
+.sheet .lead{color:var(--ink-soft); margin-top:0}
+.hint{font-size:12.5px; color:var(--ink-soft)}
+.tabs{display:grid; grid-template-columns:repeat(3,1fr); background:var(--paper-2); border-radius:12px; padding:3px; gap:3px; margin-bottom:12px}
+.tabs button{border:0; background:none; border-radius:9px; padding:9px 4px; font-weight:700; font-size:14px}
+.tabs button.on{background:var(--panel); box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.seg{display:flex; flex-wrap:wrap; gap:6px}
+.seg button{border:1px solid var(--panel-line); background:var(--paper-2); border-radius:10px; padding:8px 11px; font-weight:600; font-size:13.5px}
+.seg button.on{background:var(--air-blue); border-color:var(--air-blue); color:#fff}
+.field{width:100%; box-sizing:border-box; border:1px solid var(--panel-line); background:var(--paper); color:var(--ink); border-radius:10px; padding:10px 12px; font:inherit; font-size:16px}
+.seats{display:grid; gap:6px}
+.seatrow{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:8px; align-items:center}
+.seatrow .tok, .lseat .tok{width:16px; height:16px; border-radius:50%; background:var(--c)}
+.seatrow select{border:1px solid var(--panel-line); background:var(--paper); color:var(--ink); border-radius:10px; padding:9px 6px; font:inherit; font-size:14px}
+.sw{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; align-items:center; padding:8px 0; border-top:1px solid var(--panel-line)}
+.sw .t{font-weight:700; font-size:14px} .sw .d{grid-column:1; font-size:12.5px; color:var(--ink-soft); line-height:1.4}
+.sw button{grid-row:1/3; grid-column:2; width:46px; height:28px; border-radius:14px; border:0; background:var(--line); position:relative}
+.sw button::after{content:""; position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:left .15s}
+.sw button.on{background:var(--ok)} .sw button.on::after{left:21px}
+.btns{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; align-items:center}
+.btns.col{flex-direction:column; align-items:stretch}
+.btns .btn{flex:1}
+.row2{display:flex; gap:8px}
+.row2 .field{flex:1}
+.code{display:flex; align-items:baseline; gap:10px; margin:4px 0 8px}
+.code b{font-family:var(--f-num); font-size:30px; letter-spacing:.12em}
+.lseats{display:grid; gap:6px}
+.lseat{display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:var(--paper-2)}
+.lseat .n{flex:1; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.lseat.empty .n{color:var(--ink-soft); font-weight:500}
+.ctl{display:grid; gap:6px; margin-top:10px}
+.ctl > span{font-size:13px; font-weight:700}
+.props{display:grid; gap:6px}
+.prop{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 10px; align-items:center; padding:8px 10px; border-radius:10px; background:var(--paper-2)}
+.prop .sb{width:8px; align-self:stretch; border-radius:4px; background:var(--sc)}
+.prop .pn{font-weight:700; min-width:0} .prop .pn small{display:block; font-weight:500; color:var(--ink-soft); font-size:12px}
+.prop .btn{min-height:38px; padding:6px 10px; font-size:13px}
+table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
+.tolls td,.tolls th{padding:6px 4px; border-bottom:1px solid var(--panel-line); text-align:right}
+.tolls th{text-align:left; font-weight:600}
+.tolls td{font-family:var(--f-num)}
+.tolls tr.now th,.tolls tr.now td{color:var(--air-blue); font-weight:800}
+.joinbox{background:var(--paper-2); border-radius:12px; padding:10px 12px; margin:10px 0; display:grid; gap:8px}
+.ranks{display:grid; gap:6px; margin:8px 0}
+.rk{display:grid; grid-template-columns:28px 14px minmax(0,1fr) auto; gap:8px; align-items:center; padding:9px 10px; border-radius:10px; background:var(--paper-2)}
+.rk b{font-family:var(--f-display); font-weight:400; font-size:20px}
+.rk .tok{width:14px; height:14px; border-radius:50%; background:var(--c)}
+.rk .n{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.rk .v{font-family:var(--f-num); font-weight:600}
+.rk.first{background:color-mix(in srgb, var(--gold) 30%, var(--paper-2))}
+.rules{font-size:14px} .rules li{margin:4px 0; line-height:1.5}
+.says{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translate(-50%, 30px); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:12px; font-weight:700; font-size:14px; opacity:0; transition:.25s; z-index:80; pointer-events:none; max-width:calc(100% - 40px); text-align:center}
+.toast.show{opacity:1; transform:translate(-50%, 0)}
+.confetti{position:fixed; inset:0; pointer-events:none; z-index:70}
+.link{color:var(--air-blue); font-weight:700}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms!important; transition-duration:.01ms!important} }
+</style>
+
+<div class="app" id="app">
+  <div class="top">
+    <div class="logo"><svg class="stamp" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--air-red)" stroke-width="2" stroke-dasharray="3 2"/><path d="M6 19l20-8-6 11-4-3-3 4v-5z" fill="var(--air-blue)"/></svg><span>한판 세계여행</span></div>
+    <div class="sp"></div>
+    <div class="clock" id="clock"></div>
+    <button class="iconbtn" id="bSay" hidden aria-label="한마디"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
+    <button class="iconbtn" id="bSnd" aria-label="소리"><svg viewBox="0 0 24 24" id="sndIco"></svg></button>
+    <button class="iconbtn" id="bMenu" aria-label="메뉴"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+  <div class="ppl" id="ppl"></div>
+  <div class="boardwrap"><div class="envelope"><div class="board" id="board">
+    <div class="center" id="center"><div class="cin">
+      <div class="mark" id="mark">한판 세계여행<small>PAR AVION</small></div>
+      <div class="dice" id="dice"><div class="die" id="d0"></div><div class="die" id="d1"></div></div>
+      <div class="news" id="news"></div>
+      <div class="facts" id="facts"></div>
+    </div></div>
+    <div class="toks" id="toks"></div>
+  </div></div></div>
+  <div class="act" id="act"></div>
+  <div class="log" id="log"><h3>여행 기록</h3><ol id="logl"></ol></div>
+</div>
+<div id="sheets"></div>
+<div class="toast" id="toast" role="status"></div>
+<canvas class="confetti" id="fx" hidden></canvas>
+
+<script>/*ENGINE*/</script>
+<script>/*AI*/</script>
+<script>
+'use strict';
+var SERVER = '__SERVER_URL__';
+var T = WT.T, N = WT.N;
+var KEY = 'world-trip-v1';
+var NAMES = ['비행기', '배낭', '여권', '캐리어'];
+var BOTS = ['파랑새봇', '철새봇', '갈매기봇', '두루미봇'];
+var LVNAME = { easy:'느긋한', normal:'야무진' };
+var SAYS = ['안녕하세요!', '잘 부탁해요', '좋은 여행!', '아이고…', '부자 되세요', '통행료 감사해요', '조금만 봐줘요', '한 판 더?'];
+var SHORT = { '부에노스아이레스':'부에노스', '초음속 여객기':'여객기', '호화 여객선':'여객선', '우주왕복선':'왕복선', '사회복지기금':'기금' };
+var SIDE_NAME = ['아시아·아프리카', '유럽', '아메리카·오세아니아', '세계 대도시'];
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function won(v){ // 천 원 단위 → '123만 4천'
+  v = Math.round(v); var neg = v < 0; v = Math.abs(v);
+  var man = Math.floor(v / 10), ch = v % 10, s;
+  if (man && ch) s = man + '만 ' + ch + '천'; else if (man) s = man + '만'; else if (ch) s = ch + '천'; else s = '0';
+  return (neg ? '−' : '') + s;
+}
+function pc(i){ return 'var(--p' + (G.players[i] ? G.players[i].color : i) + ')'; }
+function pn(i){ return '<b style="--c:' + pc(i) + ';color:' + pc(i) + '">' + esc(G.players[i].name) + '</b>'; }
+function tn(i){ return T[i].n; }
+
+// ── 저장 ──
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+var store = load();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+if (store.sound == null) store.sound = true;
+store.setup = store.setup || {};
+var SU = store.setup;
+SU.cpu = SU.cpu || { name:'', n:2, lv:'normal' };
+SU.local = SU.local || { n:3, seats:[{name:'',who:'human'},{name:'',who:'human'},{name:'',who:'normal'},{name:'',who:'normal'}] };
+SU.cfg = Object.assign({ start:2930, triple:true, buildOnBuy:false, len:'r20' }, SU.cfg || {});
+
+function rnd(){ try{ var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; }catch(e){ return Math.random(); } }
+function die(){ return 1 + Math.floor(rnd() * 6); }
+
+var G = null;          // 지금 판 (온라인은 서버가 보낸 화면)
+var MODE = 'local';    // local | online
+var busy = false;      // 애니메이션 중
+var timer = 0;
+var DP = [];           // 화면에 보이는 말 자리
+var SEL = -1;          // 우주여행 고른 칸
+var DEMO = false;      // 시작 화면 뒤의 보기용 판
+var SHEET = '';
+var NET = { ws:null, seat:-1, room:null, queue:[], pending:false, round:0 };
+var SPEED = store.fast ? 0.55 : 1;
+function ms(x){ return Math.round(x * SPEED); }
+
+// ── 판 그리기 ──
+function cellOf(i){ // [줄, 칸] (0~10)
+  if (i <= 10) return [10, 10 - i];
+  if (i <= 20) return [10 - (i - 10), 0];
+  if (i <= 30) return [0, i - 20];
+  return [i - 30, 10];
+}
+function bandSide(i){ var s = WT.sideOf(i); return ['b-top', 'b-right', 'b-bottom', 'b-left'][s]; }
+var ICONS = {
+  start:'<path d="M20 12H5M11 6l-6 6 6 6"/><path d="M20 6v12"/>',
+  island:'<path d="M12 21c0-5 1-9 3-12"/><path d="M15 9c-2-3-6-3-8-1 3 0 5 1 8 1zM15 9c1-3 5-4 7-2-3 0-5 1-7 2zM15 9c-1 3-4 5-7 5 1-3 4-5 7-5z"/><path d="M3 21h18"/>',
+  fund:'<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/><path d="M12 9v6M9.5 12h5"/>',
+  space:'<path d="M12 3c3 2 5 6 4 11l-4 3-4-3c-1-5 1-9 4-11z"/><circle cx="12" cy="10" r="1.6"/><path d="M8 14l-3 3 1 3 3-2M16 14l3 3-1 3-3-2M10 19l2 3 2-3"/>',
+  donate:'<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M9 9V7a3 3 0 0 1 6 0v2M12 13v3"/>',
+  key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>',
+  JET:'<path d="M3 13l18-6-3 5-8 3-2 4-1-4z"/>',
+  SHIP:'<path d="M4 15h16l-2 5H6z"/><path d="M7 15V9h10v6M10 9V5h4v4"/>',
+  SHTL:'<path d="M12 2c2 2 3 5 3 9v6H9v-6c0-4 1-7 3-9z"/><path d="M9 13l-3 4v2h3M15 13l3 4v2h-3M11 21h2"/>',
+  CJU:'<path d="M3 18l6-9 4 5 3-3 5 7z"/><circle cx="17" cy="6" r="2"/>',
+  PUS:'<path d="M3 16c3-2 6-2 9 0s6 2 9 0"/><path d="M6 13V7l4-3 4 3v6"/><path d="M10 13V9"/>',
+  SEL:'<path d="M12 3v4M9 7h6l1 3H8z"/><path d="M10 10v8M14 10v8M7 21h10M8 18h8"/>'
+};
+var BLD = {
+  villa:'<svg viewBox="0 0 12 12"><path d="M2 6l4-4 4 4v5H2z"/></svg>',
+  bldg:'<svg viewBox="0 0 12 12"><path d="M3 1h6v10H3z"/><path d="M5 3h2M5 6h2"/></svg>',
+  hotel:'<svg viewBox="0 0 12 12"><path d="M1 3h10v8H1z"/><path d="M3 1h6v2"/><path d="M5 11V7h2v4"/></svg>'
+};
+var tileEls = [];
+function drawBoard(){
+  var bd = $('board');
+  tileEls.forEach(function(e){ e.remove(); });
+  tileEls = [];
+  for (var i = 0; i < N; i++){
+    var t = T[i], c = cellOf(i), d = document.createElement('button');
+    d.className = 'tile';
+    d.style.gridRow = (c[0] + 1); d.style.gridColumn = (c[1] + 1);
+    d.dataset.i = i;
+    var name = SHORT[t.n] || t.n, html = '';
+    var corner = i % 10 === 0;
+    if (corner) d.classList.add('corner');
+    if (t.k === 'city'){
+      d.classList.add(bandSide(i));
+      d.style.setProperty('--sc', 'var(--s' + WT.sideOf(i) + ')');
+      html = '<span class="band"></span><span class="tn">' + esc(name) + '</span><span class="tp"></span><span class="bld"></span>';
+    } else if (t.k === 'spot' || t.k === 'ride'){
+      d.classList.add(bandSide(i));
+      html = '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.en] || '') + '</svg><span class="tn">' + esc(name) + '</span><span class="tp"></span>';
+    } else if (t.k === 'key'){
+      d.classList.add('key');
+      html = '<svg class="ic" viewBox="0 0 24 24">' + ICONS.key + '</svg><span class="tn">황금열쇠</span>';
+    } else {
+      var lab = { start:'출발', island:'무인도', fund:'복지기금<br>받기', space:'우주여행', donate:'복지기금<br>내기' }[t.k];
+      html = '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.k] || '') + '</svg><span class="tn">' + lab + '</span>';
+      if (t.k === 'donate') html += '<span class="tp">15만</span>';
+      if (t.k === 'start') html += '<span class="tp">월급 20만</span>';
+    }
+    d.innerHTML = html;
+    d.setAttribute('aria-label', t.n);
+    d.onclick = onTile;
+    bd.insertBefore(d, $('center'));
+    tileEls.push(d);
+  }
+}
+function renderTiles(){
+  var here = {};
+  if (G && G.phase !== 'over'){ var cp = G.players[G.turn]; if (cp) here[DP[G.turn] != null ? DP[G.turn] : cp.pos] = pc(G.turn); }
+  for (var i = 0; i < N; i++){
+    var d = tileEls[i], t = T[i];
+    if (!WT.isDeed(i)) continue;
+    var o = G ? G.own[i] : -1, lv = G ? G.lv[i] : 0;
+    d.classList.toggle('owned', o >= 0);
+    if (o >= 0) d.style.setProperty('--oc', pc(o)); else d.style.removeProperty('--oc');
+    var tp = d.querySelector('.tp');
+    tp.textContent = o >= 0 ? won(WT.tollOf(G, i)) : won(t.p);
+    var ownEl = d.querySelector('.own');
+    if (o >= 0 && !ownEl){ ownEl = document.createElement('span'); ownEl.className = 'own'; d.appendChild(ownEl); }
+    if (o < 0 && ownEl) ownEl.remove();
+    var b = d.querySelector('.bld');
+    if (b){
+      var h = '';
+      if (lv === 1) h = BLD.villa; else if (lv === 2) h = BLD.villa + BLD.villa; else if (lv === 3) h = BLD.bldg; else if (lv === 4) h = BLD.hotel;
+      if (b.innerHTML !== h) b.innerHTML = h;
+    }
+    d.setAttribute('aria-label', t.n + (o >= 0 ? ', ' + G.players[o].name + ' 땅, ' + WT.LV_NAME[lv] + ', 통행료 ' + won(WT.tollOf(G, i)) : ', ' + won(t.p)));
+  }
+  var picking = G && G.phase === 'space' && myTurn() && !busy;
+  tileEls.forEach(function(d, i){
+    d.classList.toggle('pick', picking && i !== WT.SPACE);
+    d.classList.toggle('sel', picking && i === SEL);
+  });
+}
+
+// 말 자리 (판 기준 %)
+function tokPos(i, k, cnt){
+  var c = cellOf(i);
+  var colW = [1.45].concat(Array(9).fill(1)).concat([1.45]), tot = 11.9;
+  function at(arr, idx){ var s = 0; for (var j = 0; j < idx; j++) s += arr[j]; return (s + arr[idx] / 2) / tot * 100; }
+  var x = at(colW, c[1]), y = at(colW, c[0]);
+  var off = [[-1.6, -0.6], [1.6, -0.6], [-1.6, 2.4], [1.6, 2.4]];
+  if (cnt > 1){ x += off[k][0]; y += off[k][1]; } else y += 1.2;
+  return [x, y];
+}
+var tokEls = [];
+function buildToks(){
+  $('toks').innerHTML = ''; tokEls = [];
+  G.players.forEach(function(p, i){
+    var e = document.createElement('div'); e.className = 'tk'; e.style.setProperty('--c', pc(i));
+    $('toks').appendChild(e); tokEls.push(e);
+  });
+  DP = G.players.map(function(p){ return p.pos; });
+  placeToks();
+}
+function placeToks(){
+  var groups = {};
+  G.players.forEach(function(p, i){ if (p.out) return; var at = DP[i]; (groups[at] = groups[at] || []).push(i); });
+  G.players.forEach(function(p, i){
+    var e = tokEls[i]; if (!e) return;
+    e.hidden = !!p.out;
+    if (p.out) return;
+    var g = groups[DP[i]], k = g.indexOf(i), xy = tokPos(DP[i], k, g.length);
+    e.style.left = xy[0] + '%'; e.style.top = xy[1] + '%';
+    e.classList.toggle('on', G.phase !== 'over' && G.turn === i);
+  });
+}
+
+// ── 사람/차례 ──
+function myTurn(){
+  if (!G || G.phase === 'over') return false;
+  var p = G.players[G.turn];
+  if (MODE === 'online') return G.turn === NET.seat && !(NET.room && NET.room.away && NET.room.away[NET.seat]);
+  return !p.ai;
+}
+
+// ── 여행자 띠 ──
+function renderPeople(){
+  var box = $('ppl'); box.style.setProperty('--n', G.players.length);
+  var R = NET.room, sayOn = MODE === 'online' && R && R.say && Date.now() < (NET.sayUntil || 0);
+  box.innerHTML = G.players.map(function(p, i){
+    var tags = [];
+    if (p.isl > 0) tags.push('<span class="tag">무인도 ' + p.isl + '</span>');
+    if (p.spc) tags.push('<span class="tag">우주 정거장</span>');
+    if (p.esc) tags.push('<span class="tag gold">무전기' + (p.esc > 1 ? '×' + p.esc : '') + '</span>');
+    if (p.vip) tags.push('<span class="tag gold">우대권' + (p.vip > 1 ? '×' + p.vip : '') + '</span>');
+    if (p.out) tags.push('<span class="tag red">파산</span>');
+    var sub = '';
+    if (MODE === 'online' && R){
+      var s = R.seats[i] || {};
+      if (i === NET.seat) sub = '나';
+      else if (s.kind === 'bot') sub = s.left ? '컴퓨터가 대신' : '컴퓨터';
+      else if (s.kind === 'human' && !s.online) sub = '연결 끊김';
+      if (R.away && R.away[i]) tags.push('<span class="tag">자리 비움</span>');
+    } else if (p.ai) sub = LVNAME[p.ai] || '컴퓨터';
+    if (sub){ tags.unshift('<span class="tag">' + sub + '</span>'); sub = ''; }
+    var say = sayOn && R.say.seat === i ? '<span class="say">' + esc(SAYS[R.say.k]) + '</span>' : '';
+    var bar = '';
+    if (MODE === 'online' && R && R.deadline && G.turn === i && G.phase !== 'over') bar = '<span class="bar" id="tbar"></span>';
+    return '<div class="pp' + (G.turn === i && G.phase !== 'over' ? ' on' : '') + (p.out ? ' out' : '') + '" style="--c:' + pc(i) + '" id="pp' + i + '">' +
+      '<span class="nm"><span class="tok"></span><span style="overflow:hidden;text-overflow:ellipsis">' + esc(p.name) + '</span>' + (sub ? '<i>' + sub + '</i>' : '') + '</span>' +
+      '<span class="money">' + won(p.money) + '</span><span class="tags">' + tags.join('') + '</span>' + say + bar + '</div>';
+  }).join('');
+}
+
+function renderFacts(){
+  var f = [];
+  f.push('<span>' + G.round + (G.cfg.rounds ? ' / ' + G.cfg.rounds : '') + '바퀴째</span>');
+  f.push('<span>복지기금 <b>' + won(G.fund) + '</b></span>');
+  if (G.lastRound) f.push('<span>마지막 바퀴</span>');
+  $('facts').innerHTML = f.join('');
+}
+function setNews(html, color){ var n = $('news'); n.innerHTML = html; n.style.setProperty('--nc', color || 'var(--ink)'); }
+
+function showDice(d, dbl){
+  [0, 1].forEach(function(k){
+    var el = $('d' + k), v = d ? d[k] : 0;
+    if (!el.firstChild) el.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>';
+    var on = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] }[v] || [];
+    [].forEach.call(el.children, function(p, j){ p.style.visibility = on.indexOf(j) >= 0 ? 'visible' : 'hidden'; });
+    el.classList.toggle('dbl', !!dbl);
+  });
+}
+
+// ── 할 일 ──
+function renderAct(){
+  var box = $('act'), html = '';
+  if (!G){ box.innerHTML = ''; return; }
+  var p = G.players[G.turn], col = pc(G.turn);
+  var head = function(t){ return '<h2 style="--c:' + col + '"><span class="dot"></span>' + t + '</h2>'; };
+  var timerBar = MODE === 'online' && NET.room && NET.room.deadline && G.phase !== 'over' ? '<div class="timer" id="tline"><i></i></div>' : '';
+  if (G.phase === 'over'){
+    html = head('여행 끝') + '<p>' + pn(G.winner) + ' 님이 1등이에요.</p><div class="row"><button class="btn main grow" id="aOver">결과 보기</button></div>';
+  } else if (busy){
+    html = head(esc(p.name) + ' 차례') + '<p>이동하는 중…</p>';
+  } else if (MODE === 'online' && NET.room && NET.room.away && NET.room.away[NET.seat]){
+    html = head('자리 비움') + '<p>시간이 두 번 지나서 컴퓨터가 대신 두고 있어요.</p><div class="row"><button class="btn main grow" id="aBack">돌아왔어요</button></div>';
+  } else if (!myTurn()){
+    var who = p.ai || (MODE === 'online' && NET.room && NET.room.seats[G.turn] && NET.room.seats[G.turn].kind === 'bot') ? '컴퓨터가 생각하는 중…' : esc(p.name) + ' 님을 기다리는 중…';
+    html = head(esc(p.name) + ' 차례') + timerBar + '<p>' + who + '</p>' + myStuffBtn();
+  } else {
+    var mine = MODE === 'online' || G.players.filter(function(x){ return !x.ai; }).length === 1 ? '내 차례' : esc(p.name) + ' 차례';
+    switch (G.phase){
+      case 'roll':
+        if (p.isl > 0){
+          html = head(mine + ' · 무인도') + timerBar + '<p>더블이 나오면 바로 나가요. 앞으로 ' + p.isl + '번 갇혀 있어요.</p>' +
+            '<div class="row"><button class="btn main grow" id="aRoll">주사위 굴리기</button>' + (p.esc ? '<button class="btn gold" id="aEsc">무전기 쓰기</button>' : '') + '</div>';
+        } else {
+          html = head(mine) + timerBar + (G.again ? '<p>더블! 한 번 더 굴려요.</p>' : '') +
+            '<div class="row"><button class="btn main grow" id="aRoll">주사위 굴리기</button></div>';
+        }
+        html += myStuffBtn();
+        break;
+      case 'space':
+        html = head(mine + ' · 우주여행') + timerBar + '<p>판에서 가고 싶은 칸을 누르세요. 출발을 지나면 월급을 받아요.</p>' +
+          '<div class="row"><button class="btn main grow" id="aFly"' + (SEL < 0 ? ' disabled' : '') + '>' + (SEL < 0 ? '칸을 고르세요' : esc(tn(SEL)) + '(으)로 날아가기') + '</button></div>';
+        break;
+      case 'buy': {
+        var i = G.pend.t, t = T[i];
+        html = head(mine + ' · ' + esc(t.n)) + timerBar + '<dl class="offer"><dt>땅값</dt><dd>' + won(t.p) + '</dd><dt>통행료</dt><dd>' + (t.k === 'city' ? won(t.t[0]) + ' → 호텔 ' + won(t.t[4]) : won(t.t[0])) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - t.p) + '</dd></dl>' +
+          (t.k === 'city' && !G.cfg.buildOnBuy ? '<p>건물은 다음에 다시 왔을 때 지을 수 있어요.</p>' : '') +
+          '<div class="row"><button class="btn main grow" id="aBuy">사기 <small>' + won(t.p) + '</small></button><button class="btn grow" id="aSkip">안 사기</button></div>';
+        break;
+      }
+      case 'build': {
+        var j = G.pend.t, cur = G.lv[j], opts = '';
+        for (var lv = cur + 1; lv <= 4; lv++){
+          var cost = WT.buildValue(j, lv) - WT.buildValue(j, cur);
+          opts += '<button class="btn opt" data-lv="' + lv + '"' + (p.money < cost ? ' disabled' : '') + '><span>' + WT.LV_NAME[lv] + (lv > cur + 1 && cur ? '까지' : '') + '</span><span>' + won(cost) + ' · 통행료 ' + won(T[j].t[lv]) + '</span></button>';
+        }
+        html = head(mine + ' · ' + esc(T[j].n) + '에 짓기') + timerBar + '<p>지금 ' + WT.LV_NAME[cur] + ', 통행료 ' + won(T[j].t[cur]) + '. 내 돈 ' + won(p.money) + '</p>' +
+          '<div class="opts">' + opts + '</div><div class="row"><button class="btn grow" id="aSkip">안 짓기</button></div>';
+        break;
+      }
+      case 'toll':
+        html = head(mine + ' · 통행료') + timerBar + '<p>' + pn(G.pend.to) + ' 님의 ' + esc(tn(G.pend.t)) + ' 통행료 <b class="num">' + won(G.pend.a) + '</b>. 우대권을 쓰면 안 내도 돼요.</p>' +
+          '<div class="row"><button class="btn gold grow" id="aVip">우대권 쓰기</button><button class="btn grow" id="aPay">그냥 내기</button></div>';
+        break;
+      case 'pay': {
+        var short = G.pend.a - p.money;
+        html = head(mine + ' · 돈이 모자라요') + timerBar + '<p><b class="num">' + won(G.pend.a) + '</b>을 내야 하는데 현금이 ' + won(p.money) + '이에요. 땅이나 건물을 은행에 반값에 팔아 ' + won(short) + '을 더 마련하세요.</p>' +
+          '<div class="row"><button class="btn main grow" id="aAuto">알아서 팔기</button><button class="btn grow" id="aMine">팔 것 고르기</button></div>' +
+          '<div class="row"><button class="btn red grow" id="aBank">파산하기</button></div>';
+        break;
+      }
+    }
+  }
+  box.innerHTML = html;
+  var on = function(id, f){ var e = box.querySelector('#' + id); if (e) e.onclick = f; };
+  on('aRoll', function(){ act({ type:'roll' }); });
+  on('aEsc', function(){ act({ type:'escape' }); });
+  on('aFly', function(){ if (SEL >= 0) act({ type:'space', to:SEL }); });
+  on('aBuy', function(){ act({ type:'buy' }); });
+  on('aSkip', function(){ act({ type:'skip' }); });
+  on('aVip', function(){ act({ type:'toll', use:true }); });
+  on('aPay', function(){ act({ type:'toll', use:false }); });
+  on('aAuto', autoSell);
+  on('aMine', propsSheet);
+  on('aMy', propsSheet);
+  on('aOver', overSheet);
+  on('aBack', function(){ NET.send({ t:'back' }); });
+  var bank = box.querySelector('#aBank');
+  if (bank) bank.onclick = function(){
+    if (bank.dataset.arm){ act({ type:'bankrupt' }); return; }
+    bank.dataset.arm = 1; bank.textContent = '정말 파산할까요? 한 번 더 누르세요';
+    setTimeout(function(){ if (bank.isConnected){ delete bank.dataset.arm; bank.textContent = '파산하기'; } }, 3000);
+  };
+  [].forEach.call(box.querySelectorAll('[data-lv]'), function(b){ b.onclick = function(){ act({ type:'build', lv:+b.dataset.lv }); }; });
+  updateTimer();
+}
+function myStuffBtn(){
+  var me = MODE === 'online' ? NET.seat : (myTurn() ? G.turn : G.players.filter(function(x){ return !x.ai; }).length === 1 ? G.players.findIndex(function(x){ return !x.ai; }) : -1);
+  if (me < 0 || !G.players[me] || G.players[me].out) return '';
+  var cnt = WT.owned(G, me).length;
+  return '<div class="row"><button class="btn grow" id="aMy" style="min-height:38px;font-size:13.5px">내 땅 ' + cnt + '곳' + (G.players[me].esc ? ' · 무전기' : '') + '</button></div>';
+}
+
+// ── 기록 ──
+var LOG = [];
+function logLine(html){ LOG.unshift(html); if (LOG.length > 60) LOG.pop(); $('logl').innerHTML = LOG.map(function(h){ return '<li>' + h + '</li>'; }).join(''); }
+
+// 사건 → 문장
+function say(e, g){
+  var P = function(i){ return '<b style="color:' + pc(i) + '">' + esc(g.players[i].name) + '</b>'; };
+  var who = function(to){ return to >= 0 ? P(to) + ' 님에게' : to === -2 ? '복지기금에' : '은행에'; };
+  switch (e.k){
+    case 'roll': return P(e.p) + ' ' + e.d[0] + '+' + e.d[1] + (e.d[0] === e.d[1] ? ' 더블!' : '');
+    case 'buy': return P(e.p) + ' 님이 ' + tn(e.t) + '을(를) 샀어요 (' + won(e.a) + ')';
+    case 'build': return P(e.p) + ' 님이 ' + tn(e.t) + '에 ' + WT.LV_NAME[e.lv] + (e.lv === 2 ? '로 늘렸어요' : '을(를) 지었어요') + ' (' + won(e.a) + ')';
+    case 'toll': return P(e.p) + ' 님이 ' + P(e.to) + ' 님에게 ' + tn(e.t) + ' 통행료 ' + won(e.a);
+    case 'salary': return P(e.p) + ' 월급 +' + won(e.a);
+    case 'key': return P(e.p) + ' 황금열쇠 「' + WT.KEYS[e.c].n + '」';
+    case 'island': return P(e.p) + ' 님이 무인도에 갇혔어요';
+    case 'stay': return P(e.p) + ' 님은 무인도에 그대로 (' + e.left + '번 남음)';
+    case 'out': return P(e.p) + ' 님이 더블로 무인도를 빠져나왔어요';
+    case 'radio': return P(e.p) + ' 님이 무전기로 구조 요청! 무인도를 나가요';
+    case 'triple': return P(e.p) + ' 더블 세 번! 무인도로 가요';
+    case 'fund': return P(e.p) + ' 님이 복지기금 ' + won(e.a) + (e.a ? '을 받았어요' : ' (모인 돈이 없어요)');
+    case 'donate': return P(e.p) + ' 님이 복지기금 ' + won(e.a) + '을 냈어요';
+    case 'spacefee': return P(e.p) + ' 님이 ' + P(e.to) + ' 님에게 왕복선 이용료 ' + won(e.a);
+    case 'spaceport': return P(e.p) + ' 님이 우주 정거장에 왔어요. 다음 차례에 원하는 곳으로!';
+    case 'fly': return P(e.p) + ' 님이 ' + tn(e.to) + '(으)로 날아가요';
+    case 'cant': return P(e.p) + ' 님은 ' + tn(e.t) + '을(를) 살 돈이 모자라요';
+    case 'skip': return P(e.p) + ' 님이 ' + tn(e.t) + (e.ph === 'buy' ? '을(를) 사지 않았어요' : '에 짓지 않았어요');
+    case 'vip': return P(e.p) + ' 님이 우대권으로 통행료 ' + won(e.a) + '을 아꼈어요';
+    case 'sell': return P(e.p) + ' 님이 ' + tn(e.t) + (e.lv < 0 ? ' 땅을' : '의 건물을') + ' 은행에 팔았어요 (+' + won(e.a) + ')';
+    case 'sellcard': return P(e.p) + ' 님이 무전기를 은행에 팔았어요 (+' + won(e.a) + ')';
+    case 'paid': return P(e.p) + ' 님이 ' + who(e.to) + ' ' + won(e.a) + '을 갚았어요';
+    case 'gift': return P(e.p) + ' → ' + P(e.to) + ' ' + won(e.a);
+    case 'tax': return P(e.p) + ' 님이 ' + won(e.a) + '을 냈어요';
+    case 'halfsale': return P(e.p) + ' 님의 ' + tn(e.t) + '이(가) 반값 ' + won(e.a) + '에 팔렸어요';
+    case 'nohalf': return P(e.p) + ' 님은 팔 땅이 없어서 그냥 넘어가요';
+    case 'bankrupt': return P(e.p) + ' 님이 파산했어요' + (e.to >= 0 ? ' (' + P(e.to) + ' 님에게 ' + won(e.a) + ')' : '');
+    case 'lastround': return '시간이 다 됐어요. 이번 바퀴가 마지막!';
+    case 'over': return P(e.w) + ' 님이 1등! 여행 끝';
+  }
+  return '';
+}
+
+// ── 애니메이션 ──
+function wait(t){ return new Promise(function(r){ setTimeout(r, ms(t)); }); }
+function floatAt(i, text, plus){
+  var pp = $('pp' + i); if (!pp) return;
+  var r = pp.getBoundingClientRect(), f = document.createElement('div');
+  f.className = 'fl ' + (plus ? 'plus' : 'minus'); f.textContent = text;
+  f.style.position = 'fixed'; f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.top + 2) + 'px';
+  document.body.appendChild(f); setTimeout(function(){ f.remove(); }, 1400);
+}
+function flashTile(i){ var d = tileEls[i]; if (!d) return; d.classList.remove('flash'); void d.offsetWidth; d.classList.add('flash'); }
+function setMoney(i, v){ var pp = $('pp' + i); if (pp) pp.querySelector('.money').textContent = won(v); }
+
+async function rollAnim(d){
+  snd('roll');
+  var els = [$('d0'), $('d1')];
+  els.forEach(function(e){ e.classList.add('shake'); });
+  var end = Date.now() + ms(650);
+  while (Date.now() < end){ showDice([die(), die()]); await wait(70); }
+  els.forEach(function(e){ e.classList.remove('shake'); });
+  showDice(d, d[0] === d[1]);
+  snd('land');
+}
+async function stepAnim(p, from, n){
+  var dir = n < 0 ? -1 : 1, cnt = Math.abs(n), per = cnt >= 40 ? 28 : 115;
+  for (var s = 0; s < cnt; s++){
+    DP[p] = (DP[p] + dir + N) % N;
+    placeToks(); renderTiles();
+    if (s % (cnt >= 40 ? 4 : 1) === 0) snd('step');
+    await wait(per);
+  }
+}
+async function flyAnim(p, to, ms0){
+  var e = tokEls[p]; e.classList.add('fly');
+  DP[p] = to; placeToks(); renderTiles();
+  snd('fly');
+  await wait(ms0 || 750);
+  e.classList.remove('fly');
+}
+var keyT = 0, keySkip = null;
+function showKey(id, mine){
+  var k = WT.KEYS[id], box = document.createElement('div');
+  box.className = 'keycard';
+  box.innerHTML = '<div class="kc" role="dialog" aria-label="황금열쇠"><small>GOLDEN KEY · 황금열쇠</small><h3>' + esc(k.n) + '</h3><p>' + esc(k.d) + '</p></div>';
+  $('center').appendChild(box);
+  snd('key');
+  return new Promise(function(res){
+    var done = function(){ if (!box.isConnected) return; box.remove(); clearTimeout(keyT); keySkip = null; res(); };
+    keySkip = done; box.onclick = done;
+    keyT = setTimeout(done, ms(mine ? 2600 : 2000));
+  });
+}
+
+async function play(g){
+  busy = true;
+  var old = G;
+  // 화면에는 바뀐 돈을 사건마다 보여 주려고 이전 상태에서 시작
+  var money = old.players.map(function(p){ return p.money; });
+  G = Object.assign({}, old, { players:old.players.map(function(p, i){ return Object.assign({}, p, { name:g.players[i].name, ai:g.players[i].ai }); }) });
+  renderAct();
+  var evs = g.last || [];
+  for (var k = 0; k < evs.length; k++){
+    var e = evs[k], line = say(e, g);
+    if (line && e.k !== 'roll') logLine(line);
+    switch (e.k){
+      case 'roll': setNews(line); logLine(line); await rollAnim(e.d); await wait(150); break;
+      case 'move':
+        if (Math.abs(e.n) >= 40){ setNews(pn2(g, e.p) + ' 세계일주!'); }
+        await stepAnim(e.p, e.from, e.n); await wait(120); break;
+      case 'warp': await flyAnim(e.p, e.to, 600); break;
+      case 'fly': setNews(line); await flyAnim(e.p, e.to, 800); break;
+      case 'salary': money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); break;
+      case 'key': setNews(line); await showKey(e.c, isMineSeat(e.p)); break;
+      case 'buy': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('buy'); setNews(line); G.own = G.own.slice(); G.own[e.t] = e.p; renderTiles(); await wait(650); break;
+      case 'build': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('build'); setNews(line); G.lv = G.lv.slice(); G.lv[e.t] = e.lv; renderTiles(); await wait(650); break;
+      case 'toll': case 'spacefee': case 'gift':
+        money[e.p] -= e.a; money[e.to] += e.a; setMoney(e.p, money[e.p]); setMoney(e.to, money[e.to]);
+        floatAt(e.p, '−' + won(e.a)); floatAt(e.to, '+' + won(e.a), true); snd(e.k === 'gift' ? 'coin' : 'pay'); setNews(line); await wait(e.k === 'gift' ? 380 : 800); break;
+      case 'donate': case 'tax': setNews(line); snd('pay'); await wait(700); break;
+      case 'fund': if (e.a){ money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); } setNews(line); await wait(700); break;
+      case 'island': case 'triple': setNews(line); snd('sad'); await wait(700); break;
+      case 'stay': case 'out': case 'radio': case 'spaceport': case 'cant': case 'vip': case 'halfsale': case 'nohalf': case 'lastround':
+        setNews(line); await wait(650); break;
+      case 'sell': case 'sellcard': case 'paid': setNews(line); snd('coin'); await wait(e.auto ? 260 : 420); break;
+      case 'skip': setNews(line); await wait(250); break;
+      case 'bankrupt': setNews(line); snd('sad'); await wait(1100); break;
+      case 'over': setNews(line); break;
+    }
+  }
+  G = g; busy = false;
+  DP = g.players.map(function(p){ return p.pos; });
+  render();
+  if (!evs.some(function(e){ return e.k !== 'roll' && e.k !== 'move' && e.k !== 'turn' && e.k !== 'salary'; })){
+    var last = evs.filter(function(e){ return e.k !== 'turn'; }).pop();
+    if (last && last.k === 'move') setNews(pn2(g, last.p) + ' 님이 ' + esc(tn(last.to)) + '에 도착');
+  }
+  if (g.phase !== 'over' && evs.some(function(e){ return e.k === 'turn'; })){
+    setTimeout(function(){ if (!busy && G === g) setNews(pn2(g, g.turn) + ' 님 차례'); }, ms(500));
+  }
+  if (autoPay && g.phase === 'pay' && myTurn()) setTimeout(autoSell, ms(150)); else autoPay = false;
+  if (g.phase === 'over' && SHEET !== 'over'){ snd('win'); confetti(); setTimeout(overSheet, ms(900)); }
+  else if (myTurn()) snd('turn');
+}
+function pn2(g, i){ return '<b style="color:' + pc(i) + '">' + esc(g.players[i].name) + '</b>'; }
+function isMineSeat(i){ return MODE === 'online' ? i === NET.seat : !G.players[i].ai; }
+
+function render(){
+  if (!G) return;
+  if (tokEls.length !== G.players.length) buildToks();
+  if (!busy) DP = G.players.map(function(p){ return p.pos; });
+  renderPeople(); renderTiles(); placeToks(); renderFacts(); renderAct(); updateClock();
+  $('bSay').hidden = MODE !== 'online';
+}
+
+// ── 동작 ──
+function act(a){
+  if (busy || !G) return;
+  if (MODE === 'online'){
+    if (!myTurn()) return;
+    sendAction(a);
+    return;
+  }
+  if (a.type === 'roll') a = { type:'roll', d:[die(), die()] };
+  var ng = WT.apply(G, a);
+  if (ng === G) return;
+  if (a.type === 'space') SEL = -1;
+  persistLater(ng);
+  play(ng).then(next);
+}
+function autoSell(){
+  if (busy || !G || G.phase !== 'pay' || !myTurn()) return;
+  autoPay = true;
+  var me = G.turn, p = G.players[me];
+  if (p.esc){ act({ type:'sellCard' }); return; }
+  var ord = WT.autoSellOrder(G, me);
+  if (ord.length) act({ type:'sell', t:ord[0] });
+}
+// 갚기 중 '알아서 팔기'는 다 갚을 때까지 이어서
+var autoPay = false;
+
+function next(){
+  if (MODE === 'online' || !G) return;
+  persist();
+  clearTimeout(timer);
+  if (G.phase === 'over') return;
+  if (checkTime()) return;
+  var p = G.players[G.turn];
+  if (p.ai){
+    timer = setTimeout(function(){
+      if (busy || MODE !== 'local') return;
+      var a = WAI.choose(G, p.ai, rnd);
+      if (a) act(a);
+    }, ms(G.phase === 'roll' ? 650 : 520));
+  }
+}
+function checkTime(){
+  if (MODE !== 'local' || !G || G.phase === 'over' || !G.cfg.timeMin || G.lastRound || busy) return false;
+  if (Date.now() - G.t0 >= G.cfg.timeMin * 60000){ act({ type:'lastRound' }); return true; }
+  return false;
+}
+function updateClock(){
+  var c = $('clock'); if (!G){ c.textContent = ''; return; }
+  var now = Date.now() + (MODE === 'online' ? (NET.off || 0) : 0);
+  if (G.cfg.timeMin && G.phase !== 'over'){
+    var left = Math.max(0, G.cfg.timeMin * 60000 - (now - G.t0)), m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
+    c.innerHTML = G.lastRound ? '마지막<br>바퀴' : '남은 시간<br>' + m + ':' + (s < 10 ? '0' : '') + s;
+  } else if (G.cfg.rounds) c.innerHTML = G.round + '/' + G.cfg.rounds + '<br>바퀴';
+  else c.innerHTML = G.round + '바퀴째';
+}
+function updateTimer(){
+  var R = NET.room;
+  var line = $('tline'), bar = $('tbar');
+  if (!(MODE === 'online' && R && R.deadline && G && G.phase !== 'over')) return;
+  var now = Date.now() + (NET.off || 0), tot = R.turnSec * 1000, left = Math.max(0, R.deadline - now);
+  var f = Math.min(1, left / tot);
+  if (line){ line.querySelector('i').style.transform = 'scaleX(' + f + ')'; line.classList.toggle('hurry', left < 5000); }
+  if (bar) bar.style.transform = 'scaleX(' + f + ')';
+  if (myTurn() && left < 5000 && left > 0){ var sec = Math.ceil(left / 1000); if (sec !== NET.beep){ NET.beep = sec; snd('beep'); } }
+}
+setInterval(function(){ updateClock(); updateTimer(); if (!busy && MODE === 'local') { if (checkTime()) return; } }, 250);
+
+// ── 칸 누르기 ──
+function onTile(e){
+  var i = +e.currentTarget.dataset.i;
+  if (G && G.phase === 'space' && myTurn() && !busy){
+    if (i === WT.SPACE) return;
+    SEL = i; renderTiles(); renderAct();
+    return;
+  }
+  tileSheet(i);
+}
+
+// ── 시트 ──
+function openSheet(html, kind){
+  $('sheets').innerHTML = '<div class="veil"><div class="sheet" role="dialog" aria-modal="true">' + html + '</div></div>';
+  SHEET = kind || 'other';
+  var v = $('sheets').firstChild;
+  v.onclick = function(ev){ if (ev.target === v && SHEET !== 'start' && SHEET !== 'lobby' && SHEET !== 'over') closeSheet(); };
+  return v.firstChild;
+}
+function closeSheet(){ $('sheets').innerHTML = ''; SHEET = ''; }
+function seg(box, items, cur, on, disabled){
+  box.innerHTML = '';
+  items.forEach(function(it){ var b = document.createElement('button'); b.textContent = it[1]; b.className = it[0] === cur ? 'on' : ''; b.disabled = !!disabled; b.onclick = function(){ on(it[0]); }; box.appendChild(b); });
+}
+function swRow(t, d, on, cb, disabled){
+  var r = document.createElement('div'); r.className = 'sw';
+  r.innerHTML = '<span class="t">' + t + '</span><button class="' + (on ? 'on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + t + '"' + (disabled ? ' disabled' : '') + '></button><span class="d">' + d + '</span>';
+  r.querySelector('button').onclick = cb;
+  return r;
+}
+
+function tileSheet(i){
+  var t = T[i], html = '<h2>' + esc(t.n) + '</h2>';
+  if (WT.isDeed(i)){
+    var o = G ? G.own[i] : -1, lv = G ? G.lv[i] : 0;
+    html += '<p class="lead">' + (t.k === 'city' ? SIDE_NAME[WT.sideOf(i)] + ' · ' : t.k === 'spot' ? '관광지 · 건물을 지을 수 없어요 · ' : '탈것 · ') + '땅값 ' + won(t.p) + '</p>';
+    html += '<p>' + (o >= 0 ? pn(o) + ' 님 땅' + (t.k === 'city' ? ', ' + WT.LV_NAME[lv] : '') : '아직 주인이 없어요') + '</p>';
+    if (t.k === 'city'){
+      html += '<h3>건물과 통행료</h3><table class="tolls"><tr><th></th><th style="text-align:right">짓는 값</th><th style="text-align:right">통행료</th></tr>';
+      for (var k = 0; k <= 4; k++) html += '<tr class="' + (o >= 0 && k === lv ? 'now' : '') + '"><th>' + WT.LV_NAME[k] + '</th><td>' + (k ? won(WT.stepCost(i, k - 1)) : won(t.p)) + '</td><td>' + won(t.t[k]) + '</td></tr>';
+      html += '</table><p class="hint">별장은 2채까지, 그다음 빌딩, 호텔로 키워요. 짓는 값은 한 단계 올릴 때 드는 돈이에요.</p>';
+    } else {
+      html += '<p>통행료 <b class="num">' + won(t.t[0]) + '</b></p>';
+      if (i === WT.SHUTTLE) html += '<p class="hint">우주여행 칸에 선 사람은 왕복선 주인에게 이용료 20만 원을 내요.</p>';
+    }
+  } else {
+    var d = {
+      start:'지나가거나 멈추면 월급 20만 원을 받아요.',
+      island:'멈추면 세 번 갇혀요. 자기 차례에 더블이 나오면 바로 나가요. 무전기가 있으면 언제든 나갈 수 있어요.',
+      fund:'복지기금 내는 곳에 모인 돈을 모두 받아요. 지금 ' + (G ? won(G.fund) : '0') + ' 모여 있어요.',
+      space:'멈추면 다음 차례에 판의 아무 칸으로나 갈 수 있어요. 왕복선 주인이 있으면 이용료 20만 원을 내요.',
+      donate:'멈추면 복지기금 15만 원을 내요. 모인 돈은 복지기금 받는 곳에 멈춘 사람이 가져가요.',
+      key:'카드 한 장을 뽑아 적힌 대로 해요. 돈을 받거나, 내거나, 다른 곳으로 가요.'
+    }[t.k];
+    html += '<p>' + d + '</p>';
+  }
+  html += '<div class="btns"><button class="btn" id="tClose">닫기</button></div>';
+  var sh = openSheet(html, 'tile');
+  sh.querySelector('#tClose').onclick = closeSheet;
+}
+
+function propsSheet(){
+  var me = MODE === 'online' ? NET.seat : (myTurn() ? G.turn : G.players.findIndex(function(x){ return !x.ai; }));
+  if (me < 0) return;
+  var canSell = G.turn === me && !busy && myTurn() && ['roll','buy','build','toll','space','pay'].indexOf(G.phase) >= 0;
+  var p = G.players[me], list = WT.owned(G, me);
+  var html = '<h2>' + esc(p.name) + ' 님의 땅</h2><p class="lead">현금 ' + won(p.money) + ' · 총자산 ' + won(WT.assets(G, me)) + '</p>';
+  if (G.phase === 'pay' && G.turn === me) html += '<p><b>' + won(G.pend.a) + '</b>을 내야 해요. 모자란 돈 ' + won(Math.max(0, G.pend.a - p.money)) + '</p>';
+  html += '<div class="props">';
+  if (!list.length) html += '<p class="hint">아직 산 땅이 없어요.</p>';
+  list.forEach(function(i){
+    var lv = G.lv[i], sv = lv > 0 ? Math.floor(WT.stepCost(i, lv - 1) / 2) : Math.floor(T[i].p / 2);
+    html += '<div class="prop" style="--sc:' + (T[i].k === 'city' ? 'var(--s' + WT.sideOf(i) + ')' : 'var(--line)') + '"><span class="sb"></span><span class="pn">' + esc(T[i].n) + '<small>' + (T[i].k === 'city' ? (lv ? WT.LV_NAME[lv] : '건물 없음') + ' · ' : '') + '통행료 ' + won(WT.tollOf(G, i)) + '</small></span>' +
+      (canSell ? '<button class="btn" data-sell="' + i + '">' + (lv > 0 ? '건물' : '땅') + ' 팔기 +' + won(sv) + '</button>' : '') + '</div>';
+  });
+  html += '</div>';
+  if (p.esc) html += '<div class="prop" style="--sc:var(--gold)"><span class="sb"></span><span class="pn">무인도 탈출 무전기<small>은행에 20만 원에 팔 수 있어요</small></span>' + (canSell ? '<button class="btn" id="sCard">팔기 +20만</button>' : '') + '</div>';
+  if (canSell) html += '<p class="hint">은행에 팔면 들인 돈의 절반을 받아요. 건물이 있으면 맨 위 건물부터 팔려요.</p>';
+  html += '<div class="btns"><button class="btn" id="pClose">닫기</button></div>';
+  var sh = openSheet(html, 'props');
+  sh.querySelector('#pClose').onclick = closeSheet;
+  [].forEach.call(sh.querySelectorAll('[data-sell]'), function(b){ b.onclick = function(){ closeSheet(); act({ type:'sell', t:+b.dataset.sell }); }; });
+  var sc = sh.querySelector('#sCard'); if (sc) sc.onclick = function(){ closeSheet(); act({ type:'sellCard' }); };
+}
+
+var LENS = [['all','끝까지'],['r10','10바퀴'],['r20','20바퀴'],['r30','30바퀴'],['t20','20분'],['t30','30분'],['t45','45분'],['t60','60분']];
+var LEN_HINT = '끝까지: 한 명만 남을 때까지(오래 걸려요). 바퀴·시간: 정한 만큼 돌고 나면 현금+땅+건물 값이 가장 많은 사람이 1등.';
+function lenToCfg(len, c){ c.rounds = 0; c.timeMin = 0; if (len[0] === 'r') c.rounds = +len.slice(1); if (len[0] === 't') c.timeMin = +len.slice(1); return c; }
+function cfgToLen(c){ return c.rounds ? 'r' + c.rounds : c.timeMin ? 't' + c.timeMin : 'all'; }
+function rulesBox(box, c, set, disabled){
+  box.innerHTML = '<div class="ctl"><span>한 판 길이</span><div class="seg" id="rLen"></div><span class="hint" style="font-weight:400">' + LEN_HINT + '</span></div>' +
+    '<div class="ctl"><span>시작 자금</span><div class="seg" id="rStart"></div></div><div id="rSw" style="margin-top:10px"></div>';
+  seg(box.querySelector('#rLen'), LENS, c.len, function(v){ set('len', v); }, disabled);
+  seg(box.querySelector('#rStart'), [[2000,'200만'],[2930,'293만 (원작)'],[5000,'500만']], c.start, function(v){ set('start', v); }, disabled);
+  var sw = box.querySelector('#rSw');
+  sw.appendChild(swRow('더블 세 번이면 무인도', '한 차례에 더블이 세 번 나오면 무인도로 가요', !!c.triple, function(){ set('triple', !c.triple); }, disabled));
+  sw.appendChild(swRow('산 차례에 바로 건물', '원작은 땅을 산 뒤 다시 왔을 때부터 지어요. 켜면 산 차례에도 지을 수 있어요', !!c.buildOnBuy, function(){ set('buildOnBuy', !c.buildOnBuy); }, disabled));
+}
+
+function setupSheet(tab){
+  tab = tab || store.tab || 'cpu';
+  var html = '<h2>여행 떠나기</h2>' +
+    '<div class="tabs" role="tablist"><button role="tab" id="tCpu">컴퓨터와</button><button role="tab" id="tLocal">한 기기로</button><button role="tab" id="tOn">온라인</button></div>' +
+    '<div id="pCpu"><p class="lead">컴퓨터 여행자들과 땅을 사고 통행료를 주고받아요.</p>' +
+    '<h3>내 이름</h3><input class="field" id="cName" maxlength="8" placeholder="8자까지" autocomplete="nickname">' +
+    '<h3>컴퓨터 몇 명?</h3><div class="seg" id="cN"></div><h3>컴퓨터 실력</h3><div class="seg" id="cLv"></div></div>' +
+    '<div id="pLocal"><p class="lead">휴대폰 하나를 돌려 가며 해요. 자리마다 사람이나 컴퓨터를 고를 수 있어요.</p>' +
+    '<h3>몇 명?</h3><div class="seg" id="lN"></div><h3>여행자</h3><div class="seats" id="lSeats"></div></div>' +
+    '<div id="pRules"><h3>규칙</h3><div id="rBox"></div>' +
+    '<div class="btns">' + (G && !DEMO ? '<button class="btn" id="sClose">닫기</button>' : '') + '<button class="btn main" id="sGo">출발!</button></div></div>' +
+    '<div id="pOn"></div>';
+  var sh = openSheet(html, 'start');
+  var c = SU.cfg;
+  function draw(){
+    var nm = sh.querySelector('#cName'); if (document.activeElement !== nm) nm.value = SU.cpu.name;
+    nm.oninput = function(){ SU.cpu.name = nm.value; };
+    seg(sh.querySelector('#cN'), [[1,'1명'],[2,'2명'],[3,'3명']], SU.cpu.n, function(v){ SU.cpu.n = v; draw(); });
+    seg(sh.querySelector('#cLv'), [['easy','느긋한'],['normal','야무진']], SU.cpu.lv, function(v){ SU.cpu.lv = v; draw(); });
+    seg(sh.querySelector('#lN'), [[2,'2명'],[3,'3명'],[4,'4명']], SU.local.n, function(v){ SU.local.n = v; draw(); });
+    var box = sh.querySelector('#lSeats'); box.innerHTML = '';
+    for (var i = 0; i < SU.local.n; i++) (function(i){
+      var s = SU.local.seats[i], r = document.createElement('div'); r.className = 'seatrow'; r.style.setProperty('--c', 'var(--p' + i + ')');
+      r.innerHTML = '<span class="tok"></span><input class="field" id="lName' + i + '" maxlength="8" placeholder="' + NAMES[i] + '" aria-label="' + (i + 1) + '번 이름"><select id="lWho' + i + '" aria-label="누가 하나"><option value="human">사람</option><option value="easy">느긋한 컴퓨터</option><option value="normal">야무진 컴퓨터</option></select>';
+      var inp = r.querySelector('input'), sel = r.querySelector('select');
+      inp.value = s.name; sel.value = s.who;
+      inp.oninput = function(){ s.name = inp.value; };
+      sel.onchange = function(){ s.who = sel.value; };
+      box.appendChild(r);
+    })(i);
+    rulesBox(sh.querySelector('#rBox'), c, function(k, v){ c[k] = v; draw(); });
+  }
+  function online(){
+    var p = sh.querySelector('#pOn');
+    if (!SERVER){
+      p.innerHTML = '<p class="lead">각자 휴대폰으로 같은 판에서 겨루는 온라인은 GitHub 주소에서 할 수 있어요.</p>' +
+        '<p><a class="link" href="https://2juwon.github.io/world-trip/" target="_blank" rel="noopener">2juwon.github.io/world-trip</a></p>' +
+        '<p class="hint">이 페이지는 다른 서버에 접속할 수 없어서 컴퓨터와·한 기기로만 돼요.</p>';
+      return;
+    }
+    var code = (location.hash.match(/^#(\d{6})$/) || [])[1] || '';
+    p.innerHTML = '<p class="lead">각자 휴대폰으로 같은 판에서 겨뤄요. 2~4명, 빈자리는 컴퓨터가 채워요.</p>' +
+      '<h3>내 이름</h3><input class="field" id="oName" maxlength="8" placeholder="8자까지" autocomplete="nickname">' +
+      (code ? '<div class="joinbox"><span>초대받은 방 <b class="num">' + code + '</b></span><button class="btn main" id="oInvite">이 방에 들어가기</button></div>' : '') +
+      '<div class="btns col"><button class="btn ' + (code ? '' : 'main') + '" id="oCreate">친구랑 할 방 만들기</button><button class="btn" id="oQuick">빠른 참가 (아무나와)</button></div>' +
+      '<h3>방 번호로 들어가기</h3><div class="row2"><input class="field" id="oCode" inputmode="numeric" maxlength="6" placeholder="6자리 번호"><button class="btn" id="oJoin">들어가기</button></div>' +
+      '<p class="hint">방을 만들면 초대 링크를 보내 함께할 사람을 부를 수 있어요.</p>';
+    var nm = p.querySelector('#oName'); nm.value = store.netName || SU.cpu.name || '';
+    function name(){ return nm.value.trim() || '손님'; }
+    function lock(b){ [].forEach.call(p.querySelectorAll('button'), function(x){ x.disabled = b; }); }
+    function fail(e){ lock(false); toast(e && e.message && !/fetch/i.test(e.message) ? e.message : '서버에 닿지 않아요. 잠시 뒤 다시 해 주세요'); }
+    var inv = p.querySelector('#oInvite'); if (inv) inv.onclick = function(){ goOnline(code, name()); };
+    p.querySelector('#oCreate').onclick = function(){ lock(true); api('/api/rooms').then(function(cd){ goOnline(cd, name()); }, fail); };
+    p.querySelector('#oQuick').onclick = function(){ lock(true); api('/api/quick').then(function(cd){ goOnline(cd, name()); }, fail); };
+    p.querySelector('#oJoin').onclick = function(){
+      var cd = p.querySelector('#oCode').value.replace(/\D/g, '');
+      if (cd.length !== 6){ toast('방 번호 6자리를 넣어 주세요'); return; }
+      goOnline(cd, name());
+    };
+  }
+  function show(t){
+    tab = t; store.tab = t; save();
+    [['cpu','tCpu','pCpu'],['local','tLocal','pLocal'],['online','tOn','pOn']].forEach(function(x){
+      var b = sh.querySelector('#' + x[1]); b.className = t === x[0] ? 'on' : ''; b.setAttribute('aria-selected', t === x[0]);
+      sh.querySelector('#' + x[2]).hidden = t !== x[0];
+    });
+    sh.querySelector('#pRules').hidden = t === 'online';
+  }
+  sh.querySelector('#tCpu').onclick = function(){ show('cpu'); };
+  sh.querySelector('#tLocal').onclick = function(){ show('local'); };
+  sh.querySelector('#tOn').onclick = function(){ show('online'); };
+  draw(); online(); show(tab);
+  var cl = sh.querySelector('#sClose'); if (cl) cl.onclick = closeSheet;
+  sh.querySelector('#sGo').onclick = function(){ save(); closeSheet(); startLocal(tab); };
+}
+
+function startLocal(tab){
+  var ps = [];
+  if (tab === 'cpu'){
+    ps.push({ name:(SU.cpu.name || '').trim() || '나', ai:null });
+    for (var i = 0; i < SU.cpu.n; i++) ps.push({ name:BOTS[i], ai:SU.cpu.lv });
+  } else {
+    for (var j = 0; j < SU.local.n; j++){
+      var s = SU.local.seats[j];
+      ps.push({ name:(s.name || '').trim() || (s.who === 'human' ? NAMES[j] : BOTS[j]), ai:s.who === 'human' ? null : s.who });
+    }
+  }
+  var cfg = lenToCfg(SU.cfg.len, { start:SU.cfg.start, triple:SU.cfg.triple, buildOnBuy:SU.cfg.buildOnBuy });
+  var seed = Math.floor(rnd() * 4294967296);
+  MODE = 'local'; DEMO = false;
+  G = WT.newGame(ps, cfg, Math.floor(rnd() * ps.length), seed, Date.now());
+  store.mode = tab; LOG = []; $('logl').innerHTML = ''; SEL = -1;
+  buildToks(); showDice([1, 1]);
+  render(); setNews(pn(G.turn) + ' 님부터 출발!'); logLine('여행 시작! ' + pn(G.turn) + ' 님부터');
+  persist(); next();
+}
+
+var persistT = 0;
+function persist(){ if (MODE !== 'local' || !G || DEMO) return; store.game = G; store.seen = Date.now(); save(); }
+function persistLater(g){ if (MODE !== 'local' || DEMO) return; store.game = g; store.seen = Date.now(); clearTimeout(persistT); persistT = setTimeout(save, 50); }
+document.addEventListener('visibilitychange', function(){
+  if (MODE !== 'local' || !G) return;
+  if (document.hidden){ persist(); }
+  else if (store.seen && G.cfg.timeMin){ var gap = Date.now() - store.seen; if (gap > 5000){ G.t0 += gap; persist(); } }
+});
+
+function overSheet(){
+  if (!G || G.phase !== 'over') return;
+  var why = { last:'한 명만 남았어요', rounds:'정한 바퀴를 다 돌았어요', time:'정한 시간이 끝났어요' }[G.endWhy] || '';
+  var html = '<h2>' + esc(G.players[G.winner].name) + ' 님 1등!</h2><p class="lead">' + why + '. ' + (G.endWhy === 'last' ? '' : '현금과 땅·건물 값을 더한 총자산으로 순위를 매겼어요.') + '</p><div class="ranks">';
+  G.ranks.forEach(function(i, k){
+    var p = G.players[i];
+    html += '<div class="rk' + (k === 0 ? ' first' : '') + '" style="--c:' + pc(i) + '"><b>' + (k + 1) + '</b><span class="tok"></span><span class="n">' + esc(p.name) + '</span><span class="v">' + (p.out ? '파산' : won(WT.assets(G, i))) + '</span></div>';
+  });
+  html += '</div><p class="hint">' + G.round + '바퀴 동안 여행했어요.</p>';
+  if (MODE === 'online'){
+    var host = NET.room && NET.room.host === NET.seat;
+    html += '<div class="btns">' + (host ? '<button class="btn" id="oWait">대기실로</button><button class="btn main" id="oAgain">한 판 더</button>' : '<span class="hint">방장이 다음 판을 정하길 기다려요</span>') + '<button class="btn" id="oLeave">나가기</button><button class="btn" id="oClose">판 보기</button></div>';
+  } else html += '<div class="btns"><button class="btn" id="oClose">판 보기</button><button class="btn" id="oNew">설정 바꾸기</button><button class="btn main" id="oAgain">한 판 더</button></div>';
+  var sh = openSheet(html, 'over');
+  var on = function(id, f){ var e = sh.querySelector('#' + id); if (e) e.onclick = f; };
+  on('oClose', closeSheet);
+  if (MODE === 'online'){
+    on('oAgain', function(){ NET.send({ t:'again' }); });
+    on('oWait', function(){ NET.send({ t:'toWaiting' }); });
+    on('oLeave', function(){ leaveOnline(); });
+  } else {
+    on('oAgain', function(){ closeSheet(); startLocal(store.mode || 'cpu'); });
+    on('oNew', function(){ setupSheet(store.mode); });
+  }
+}
+
+function rulesSheet(){
+  var html = '<h2>여행 규칙</h2><ol class="rules">' +
+    '<li>주사위 두 개를 굴려 나온 합만큼 가요. 더블이면 한 번 더 굴려요.</li>' +
+    '<li>출발을 지나거나 멈추면 월급 20만 원.</li>' +
+    '<li>주인 없는 도시·관광지·탈것에 서면 살 수 있어요. 남의 땅에 서면 통행료를 내요.</li>' +
+    '<li>내 도시에 다시 서면 별장(2채까지) → 빌딩 → 호텔로 키울 수 있어요. 높을수록 통행료가 커져요. 제주도·부산·서울과 탈것에는 건물을 짓지 못해요.</li>' +
+    '<li>황금열쇠 칸에 서면 카드를 뽑아요. 무전기와 우대권은 갖고 있다가 써요.</li>' +
+    '<li>무인도에 서면 세 번 갇혀요. 더블이 나오거나 무전기를 쓰면 나가요.</li>' +
+    '<li>복지기금 내는 곳에서 15만 원을 내고, 받는 곳에 선 사람이 모인 돈을 다 가져가요.</li>' +
+    '<li>우주여행 칸에 서면 다음 차례에 원하는 칸으로 날아가요. 왕복선 주인에게 이용료 20만 원.</li>' +
+    '<li>돈이 모자라면 땅·건물을 은행에 들인 돈의 반값에 팔아 갚아요. 그래도 모자라면 파산.</li>' +
+    '<li>한 명만 남으면 끝. 바퀴·시간을 정했으면 그때 총자산(현금+땅+건물 값)이 가장 많은 사람이 1등.</li></ol>' +
+    '<p class="hint">원작 보드게임을 바탕으로 했고, 탈것 이름·황금열쇠 카드는 새로 만들었어요. 문서에 없는 부분(은행에 팔 때 반값, 파산하면 땅은 은행으로)은 이 게임에서 정했어요.</p>' +
+    '<div class="btns"><button class="btn" id="rClose">닫기</button></div>';
+  var sh = openSheet(html, 'rules');
+  sh.querySelector('#rClose').onclick = closeSheet;
+}
+function menuSheet(){
+  var html = '<h2>메뉴</h2><div class="btns col">' +
+    (MODE === 'online' ? '<button class="btn" id="mInv">초대 링크 복사</button>' : '<button class="btn main" id="mNew">새 여행</button>') +
+    '<button class="btn" id="mRules">규칙 보기</button>' +
+    '<button class="btn" id="mFast">' + (store.fast ? '움직임 보통 빠르기로' : '움직임 빠르게') + '</button>' +
+    (MODE === 'online' ? '<button class="btn" id="mLeave">방 나가기</button>' : (SERVER ? '<button class="btn" id="mOn">온라인으로 하기</button>' : '')) +
+    '<button class="btn" id="mClose">닫기</button></div>';
+  var sh = openSheet(html, 'menu');
+  var on = function(id, f){ var e = sh.querySelector('#' + id); if (e) e.onclick = f; };
+  on('mNew', function(){ setupSheet(store.mode === 'local' ? 'local' : 'cpu'); });
+  on('mRules', rulesSheet);
+  on('mFast', function(){ store.fast = !store.fast; SPEED = store.fast ? 0.55 : 1; save(); closeSheet(); toast(store.fast ? '움직임을 빠르게 했어요' : '보통 빠르기로 했어요'); });
+  on('mOn', function(){ setupSheet('online'); });
+  on('mClose', closeSheet);
+  on('mInv', function(){ copyLink(location.origin + location.pathname + '#' + NET.code); });
+  var lv = sh.querySelector('#mLeave');
+  if (lv) lv.onclick = function(){
+    if (lv.dataset.arm){ leaveOnline(); return; }
+    lv.dataset.arm = 1; lv.textContent = G && G.phase !== 'over' && NET.room && NET.room.status === 'playing' ? '나가면 컴퓨터가 이어서 해요. 한 번 더 누르면 나가요' : '한 번 더 누르면 나가요';
+  };
+}
+function copyLink(link){
+  try{ navigator.clipboard.writeText(link).then(function(){ toast('초대 링크를 복사했어요'); }, function(){ toast(link); }); }catch(e){ toast(link); }
+}
+
+// ── 온라인 ──
+function newPid(){ var a = new Uint8Array(16); try{ crypto.getRandomValues(a); }catch(e){ for (var i = 0; i < 16; i++) a[i] = Math.random()*256|0; } return Array.prototype.map.call(a, function(b){ return ('0' + b.toString(16)).slice(-2); }).join(''); }
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k, v){ try{ if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
+NET.pid = lsGet('wt-pid'); if (!NET.pid){ NET.pid = newPid(); lsSet('wt-pid', NET.pid); }
+NET.send = function(o){ try{ if (NET.ws && NET.ws.readyState === 1){ NET.ws.send(JSON.stringify(o)); return true; } }catch(e){} return false; };
+function sendAction(a){
+  if (NET.pending) return;
+  if (!NET.send({ t:'act', a:a, seq:G.seq })){ toast('연결이 끊겨 있어요. 다시 잇는 중…'); return; }
+  NET.pending = true;
+  if (a.type === 'space') SEL = -1;
+  clearTimeout(NET.pendT);
+  NET.pendT = setTimeout(function(){ NET.pending = false; if (!busy) render(); }, 5000);
+}
+function api(path){
+  return fetch(SERVER + path, { method:'POST', headers:{ 'content-type':'application/json' }, body:'{}' })
+    .then(function(r){ return r.json(); })
+    .then(function(j){ if (!j || !j.code) throw new Error(j && j.error || '서버에 닿지 않아요'); return j.code; });
+}
+function goOnline(code, name){
+  name = (name || '').trim() || '손님';
+  store.netName = name; save();
+  lsSet('wt-room', code);
+  if (MODE === 'local' && G && G.phase !== 'over') persist();
+  clearTimeout(timer);
+  MODE = 'online'; DEMO = false; NET.code = code; NET.room = null; NET.queue = []; NET.round = 0; NET.retry = 0; NET.fatal = false; NET.closing = false;
+  busy = false;
+  try{ history.replaceState(null, '', '#' + code); }catch(e){}
+  closeSheet(); toast('방 ' + code + '에 들어가는 중…');
+  connect();
+}
+function connect(){
+  var url = SERVER.replace(/^http/, 'ws') + '/ws/' + NET.code + '?pid=' + NET.pid + '&name=' + encodeURIComponent(store.netName || '손님');
+  var ws;
+  try{ ws = new WebSocket(url); }catch(e){ toast('서버에 연결하지 못했어요'); return; }
+  NET.ws = ws;
+  ws.onopen = function(){ NET.retry = 0; clearInterval(NET.ping); NET.ping = setInterval(function(){ try{ ws.send('ping'); }catch(e){} }, 25000); };
+  ws.onmessage = function(e){
+    if (e.data === 'pong') return;
+    var m; try{ m = JSON.parse(e.data); }catch(x){ return; }
+    if (m.t === 'error'){
+      if (m.fatal){ NET.fatal = true; leaveOnline(m.message); return; }
+      toast(m.message); NET.pending = false; if (!busy && G) render();
+      return;
+    }
+    if (m.t === 'state') onState(m);
+  };
+  ws.onclose = function(){
+    clearInterval(NET.ping);
+    if (NET.ws !== ws || NET.fatal || NET.closing || MODE !== 'online') return;
+    NET.pending = false;
+    var w = Math.min(8000, 800 * Math.pow(2, NET.retry++));
+    toast('연결이 끊겼어요. 다시 잇는 중…');
+    setTimeout(function(){ if (MODE === 'online' && NET.ws === ws && !NET.closing) connect(); }, w);
+  };
+}
+function leaveOnline(msg){
+  NET.closing = true;
+  NET.send({ t:'leave' });
+  var ws = NET.ws; NET.ws = null;
+  setTimeout(function(){ try{ ws && ws.close(); }catch(e){} }, 150);
+  lsSet('wt-room', null);
+  try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+  MODE = 'local'; NET.room = null; NET.queue = []; NET.seat = -1; NET.pending = false;
+  busy = false; closeSheet();
+  if (store.game && store.game.v === 1 && store.game.phase !== 'over'){ G = store.game; buildToks(); render(); setNews('하던 여행을 이어서 해요'); next(); }
+  else { G = null; demoBoard(); setupSheet('online'); }
+  if (msg) toast(msg);
+}
+function onState(m){
+  var R = m.room;
+  NET.off = m.now - Date.now();
+  NET.seat = m.seat;
+  NET.room = R;
+  if (R.say){ var k = R.say.seat + ':' + R.say.at; if (k !== NET.sayKey){ NET.sayKey = k; if (Date.now() + NET.off - R.say.at < 3000){ NET.sayUntil = Date.now() + 3000; if (R.say.seat !== m.seat) snd('step'); setTimeout(function(){ if (G && !busy) renderPeople(); }, 3100); } } }
+  if (R.status === 'waiting' || !R.game){
+    NET.queue = [];
+    lobbySheet();
+    return;
+  }
+  if (SHEET === 'lobby' || SHEET === 'start') closeSheet();
+  NET.queue.push({ g:R.game, round:R.round, status:R.status });
+  pump();
+  if (!busy && G) render();
+}
+function pump(){
+  while (NET.queue.length && !busy){
+    var it = NET.queue.shift(), g = it.g;
+    var same = it.round === NET.round && G;
+    if (same && g.seq === G.seq){ G = g; NET.pending = false; if (g.phase === 'over' && SHEET !== 'over') overSheet(); continue; }
+    if (same && g.seq === G.seq + 1 && NET.queue.length < 4 && g.last && g.last.length){
+      NET.pending = false;
+      play(g).then(function(){ pump(); if (!busy) render(); });
+      return;
+    }
+    var fresh = it.round !== NET.round;
+    NET.round = it.round; NET.pending = false;
+    G = g; SEL = -1;
+    if (fresh){ buildToks(); LOG = []; $('logl').innerHTML = ''; if (SHEET === 'over') closeSheet(); setNews(pn(g.turn) + ' 님부터 출발!'); }
+    render();
+    if (g.phase === 'over' && SHEET !== 'over') overSheet();
+  }
+}
+function lobbySheet(){
+  var R = NET.room, S = R.settings, host = R.host === NET.seat, n = S.players;
+  var link = location.origin + location.pathname + '#' + R.code;
+  var html = '<h2>대기실</h2><div class="code"><span class="hint">방 번호</span><b>' + R.code + '</b></div>' +
+    '<div class="row2"><input class="field" id="wLink" readonly value="' + esc(link) + '" aria-label="초대 링크"><button class="btn" id="wCopy">링크 복사</button></div>' +
+    '<h3>여행자 (' + n + '명)</h3><div class="lseats" id="wSeats"></div>' +
+    '<h3>규칙' + (host ? '' : ' · 방장이 정해요') + '</h3>' +
+    '<div class="ctl"><span>인원</span><div class="seg" id="wN"></div></div>' +
+    '<div class="ctl"><span>한 번에 쓸 시간</span><div class="seg" id="wT"></div></div>' +
+    '<div class="ctl"><span>빈자리 컴퓨터</span><div class="seg" id="wAi"></div></div>' +
+    '<div id="wRules"></div><div id="wPub"></div>' +
+    '<div class="btns"><button class="btn" id="wLeave">나가기</button>' + (host ? '<button class="btn main" id="wStart">출발!</button>' : '<span class="hint">방장이 출발하길 기다리는 중…</span>') + '</div>';
+  var keep = SHEET === 'lobby' ? $('sheets').querySelector('.sheet').scrollTop : 0;
+  var sh = openSheet(html, 'lobby');
+  sh.scrollTop = keep;
+  var box = sh.querySelector('#wSeats');
+  for (var i = 0; i < n; i++){
+    var s = R.seats[i] || {}, d = document.createElement('div');
+    d.className = 'lseat' + (s.kind === 'human' ? '' : ' empty'); d.style.setProperty('--c', 'var(--p' + i + ')');
+    d.innerHTML = '<span class="tok"></span><span class="n">' + (s.kind === 'human' ? esc(s.name) + (i === NET.seat ? ' (나)' : '') : '빈자리 · 시작하면 ' + BOTS[i]) + '</span><span class="tag">' + (s.kind === 'human' ? (i === R.host ? '방장' : (s.online ? '' : '연결 끊김')) : '') + '</span>';
+    box.appendChild(d);
+  }
+  function set(k, v){ var o = {}; o[k] = v; NET.send({ t:'settings', settings:o }); }
+  seg(sh.querySelector('#wN'), [[2,'2명'],[3,'3명'],[4,'4명']], n, function(v){ set('players', v); }, !host);
+  seg(sh.querySelector('#wT'), [[0,'없음'],[15,'15초'],[20,'20초'],[30,'30초'],[60,'60초']], S.turnSec, function(v){ set('turnSec', v); }, !host);
+  seg(sh.querySelector('#wAi'), [['easy','느긋한'],['normal','야무진']], S.ai, function(v){ set('ai', v); }, !host);
+  rulesBox(sh.querySelector('#wRules'), { len:cfgToLen(S), start:S.start, triple:S.triple, buildOnBuy:S.buildOnBuy }, function(k, v){
+    if (k === 'len'){ var c = lenToCfg(v, {}); NET.send({ t:'settings', settings:{ rounds:c.rounds, timeMin:c.timeMin } }); }
+    else set(k, v);
+  }, !host);
+  sh.querySelector('#wPub').appendChild(swRow('빠른 참가에 공개', '켜면 모르는 사람도 빠른 참가로 들어올 수 있어요', !!S.public, function(){ set('public', !S.public); }, !host));
+  sh.querySelector('#wCopy').onclick = function(){ copyLink(link); };
+  sh.querySelector('#wLeave').onclick = function(){ leaveOnline(); };
+  var st = sh.querySelector('#wStart'); if (st) st.onclick = function(){ st.disabled = true; NET.send({ t:'start' }); };
+}
+function sayDialog(){
+  var html = '<h2>한마디</h2><div class="says">' + SAYS.map(function(s, i){ return '<button class="btn" data-k="' + i + '">' + esc(s) + '</button>'; }).join('') + '</div><div class="btns"><button class="btn" id="yClose">닫기</button></div>';
+  var sh = openSheet(html, 'say');
+  [].forEach.call(sh.querySelectorAll('[data-k]'), function(b){ b.onclick = function(){ NET.send({ t:'say', k:+b.dataset.k }); closeSheet(); }; });
+  sh.querySelector('#yClose').onclick = closeSheet;
+}
+
+// ── 소리 ──
+var ac = null;
+function audio(){ if (!ac){ try{ ac = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} } if (ac && ac.state === 'suspended') ac.resume(); return ac; }
+function tone(f, d, type, vol, when){
+  var a = audio(); if (!a) return;
+  var t = a.currentTime + (when || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(vol || .12, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + .02);
+}
+function snd(k){
+  if (!store.sound) return;
+  try{
+    switch (k){
+      case 'roll': for (var i = 0; i < 5; i++) tone(180 + Math.random() * 160, .05, 'square', .04, i * .1); break;
+      case 'land': tone(140, .12, 'triangle', .18); break;
+      case 'step': tone(660, .04, 'sine', .05); break;
+      case 'coin': tone(988, .08, 'square', .05); tone(1319, .18, 'square', .05, .07); break;
+      case 'pay': tone(392, .12, 'triangle', .1); tone(294, .2, 'triangle', .1, .1); break;
+      case 'buy': tone(523, .1, 'triangle', .1); tone(784, .2, 'triangle', .1, .09); break;
+      case 'build': tone(330, .07, 'square', .06); tone(330, .07, 'square', .06, .11); tone(660, .2, 'triangle', .1, .22); break;
+      case 'key': [784, 988, 1175, 1568].forEach(function(f, i){ tone(f, .16, 'sine', .08, i * .07); }); break;
+      case 'fly': tone(300, .5, 'sawtooth', .03); tone(600, .5, 'sine', .05, .1); break;
+      case 'sad': tone(330, .2, 'triangle', .1); tone(262, .35, 'triangle', .1, .18); break;
+      case 'turn': tone(880, .09, 'sine', .08); tone(1175, .14, 'sine', .08, .09); break;
+      case 'beep': tone(1046, .07, 'square', .05); break;
+      case 'win': [523, 659, 784, 1046, 784, 1046].forEach(function(f, i){ tone(f, .2, 'triangle', .1, i * .11); }); break;
+    }
+  }catch(e){}
+}
+function soundIcon(){ $('sndIco').innerHTML = store.sound ? '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>' : '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M17 9l5 6M22 9l-5 6"/>'; }
+
+// ── 색종이 ──
+function confetti(){
+  var c = $('fx'); c.hidden = false;
+  var x = c.getContext('2d'), W = c.width = innerWidth, H = c.height = innerHeight, cs = getComputedStyle(document.documentElement);
+  var cols = ['--air-red', '--air-blue', '--gold', '--p2'].map(function(v){ return cs.getPropertyValue(v).trim() || '#c33'; });
+  var ps = []; for (var i = 0; i < 120; i++) ps.push({ x:Math.random() * W, y:-Math.random() * H * .5, vx:(Math.random() - .5) * 2, vy:2 + Math.random() * 3, r:Math.random() * 6.28, c:cols[i % 4] });
+  var t0 = Date.now();
+  (function f(){
+    x.clearRect(0, 0, W, H);
+    ps.forEach(function(p){ p.x += p.vx; p.y += p.vy; p.r += .1; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-4, -2, 8, 4); x.restore(); });
+    if (Date.now() - t0 < 3200) requestAnimationFrame(f); else { x.clearRect(0, 0, W, H); c.hidden = true; }
+  })();
+}
+var toastT;
+function toast(s){ var t = $('toast'); t.textContent = s; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('show'); }, 2400); }
+
+function demoBoard(){ // 시작 화면 뒤에 보일 빈 판
+  G = WT.newGame([{ name:'나' }, { name:BOTS[0], ai:'normal' }], {}, 0, 1, Date.now());
+  MODE = 'local'; DEMO = true; buildToks(); showDice([5, 2]); render(); setNews('주사위를 굴려 세계를 한 바퀴!');
+}
+
+(function boot(){
+  drawBoard(); soundIcon(); showDice([5, 2]);
+  $('bSnd').onclick = function(){ store.sound = !store.sound; save(); soundIcon(); if (store.sound) snd('coin'); };
+  $('bMenu').onclick = menuSheet;
+  $('bSay').onclick = sayDialog;
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && SHEET && SHEET !== 'start' && SHEET !== 'lobby') closeSheet();
+    if ((e.key === ' ' || e.key === 'Enter') && !SHEET && keySkip){ e.preventDefault(); keySkip(); return; }
+    if (e.key === ' ' && !SHEET && G && G.phase === 'roll' && myTurn() && !busy && document.activeElement === document.body){ e.preventDefault(); act({ type:'roll' }); }
+  });
+  window.addEventListener('resize', function(){ if (G) placeToks(); });
+  var hashCode = (location.hash.match(/^#(\d{6})$/) || [])[1];
+  var lastRoom = lsGet('wt-room');
+  if (SERVER && hashCode){ demoBoard(); setupSheet('online'); return; }
+  if (SERVER && lastRoom && store.netName){ demoBoard(); goOnline(lastRoom, store.netName); return; }
+  if (store.game && store.game.v === 1 && store.game.phase !== 'over'){
+    G = store.game; MODE = 'local';
+    if (G.cfg.timeMin && store.seen){ G.t0 += Math.max(0, Date.now() - store.seen); }
+    buildToks(); render(); setNews('하던 여행을 이어서 해요 · ' + pn(G.turn) + ' 님 차례'); next();
+    return;
+  }
+  demoBoard(); setupSheet();
+})();
+</script>
