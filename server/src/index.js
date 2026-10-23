@@ -67,7 +67,7 @@ export function animMs(log) {
     switch (e.k) {
       case 'roll': t += 1000; break;
       case 'move': t += 150 + (Math.abs(e.n) >= 40 ? 40 * 28 : Math.abs(e.n) * 115); break;
-      case 'key': t += 2100; break;
+      case 'key': t += 3800; break;
       case 'fly': t += 850; break;
       case 'warp': t += 650; break;
       case 'buy': t += 1800; break;

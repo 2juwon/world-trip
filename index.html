@@ -110,6 +110,7 @@ button:disabled{cursor:default; opacity:.45}
 .tile.b-bottom .band{left:0; right:0; bottom:0; height:18%}
 .tile.b-left .band{top:0; bottom:0; left:0; width:18%}
 .tile.b-right .band{top:0; bottom:0; right:0; width:18%}
+.tile .tflag{width:clamp(10px, 2.7vw, 22px); height:clamp(6.6px, 1.8vw, 14.6px); border-radius:1.5px; box-shadow:0 0 0 .5px rgba(0,0,0,.25); flex:none; margin-bottom:1px; position:relative; z-index:1}
 .tile .tn{font-weight:800; word-break:keep-all; overflow-wrap:anywhere; padding:0 2px; position:relative; z-index:1}
 .tile .tp{font-family:var(--f-num); font-size:.82em; color:var(--ink-soft); margin-top:2px; position:relative; z-index:1}
 .tile.b-top{padding-top:12%} .tile.b-bottom{padding-bottom:12%} .tile.b-left{padding-left:14%} .tile.b-right{padding-right:14%}
@@ -132,7 +133,7 @@ button:disabled{cursor:default; opacity:.45}
 
 .center{grid-row:2/11; grid-column:2/11; position:relative; min-width:0; min-height:0;
   background:radial-gradient(color-mix(in srgb, var(--air-blue) 14%, transparent) 1px, transparent 1.2px) 0 0/10px 10px}
-.mark{position:absolute; left:0; right:0; top:9%; text-align:center; font-family:var(--f-display); font-size:clamp(18px, 5vw, 40px); color:color-mix(in srgb, var(--air-blue) 60%, var(--paper)); letter-spacing:.02em; line-height:1}
+.mark{position:absolute; left:0; right:0; top:3%; text-align:center; font-family:var(--f-display); font-size:clamp(18px, 5vw, 40px); color:color-mix(in srgb, var(--air-blue) 60%, var(--paper)); letter-spacing:.02em; line-height:1}
 .mark small{display:block; font-family:var(--f-num); font-size:.32em; letter-spacing:.3em; margin-top:4px; color:var(--ink-soft)}
 .news{position:absolute; left:6%; right:6%; top:61%; text-align:center; word-break:keep-all; font-weight:700; font-size:clamp(12px, 2.6vw, 16px); text-wrap:balance; line-height:1.3}
 .news b{color:var(--nc, var(--ink))}
@@ -156,13 +157,27 @@ button:disabled{cursor:default; opacity:.45}
 .cube .f5{transform:rotateX(-90deg) translateZ(calc(var(--ds) / 2))}
 .dpos.dbl .f{box-shadow:inset 0 0 0 2px var(--air-red), inset 0 -4px 8px rgba(20,34,58,.12)}
 
-/* 황금열쇠 카드 */
-.keycard{position:fixed; inset:0; display:grid; place-items:center; z-index:60; pointer-events:auto; padding:0 24px}
-.keycard .kc{width:min(100%, 280px); background:linear-gradient(160deg, color-mix(in srgb, var(--gold) 82%, #fff), var(--gold)); color:var(--gold-ink); border-radius:14px; padding:14px 16px; box-shadow:0 14px 34px rgba(0,0,0,.3); text-align:center; display:grid; gap:6px; animation:cardin .45s cubic-bezier(.2,1.4,.4,1)}
-.keycard .kc small{font-family:var(--f-num); font-size:11px; letter-spacing:.2em}
-.keycard .kc h3{margin:0; font-family:var(--f-display); font-size:clamp(20px, 5vw, 28px); font-weight:400}
-.keycard .kc p{margin:0; font-size:13.5px; line-height:1.45; font-weight:600}
-@keyframes cardin{from{transform:translateY(60%) rotateX(70deg) scale(.6); opacity:0} to{transform:none; opacity:1}}
+/* 황금열쇠 — 판 가운데 카드 더미에서 한 장 뽑아 뒤집어 보여 주고, 버린 카드 자리에 내려놓음 */
+.kpile{position:absolute; inset:0; pointer-events:none; transform-style:preserve-3d; z-index:4}
+.kslot{position:absolute; width:9.4%; height:13%; transform:translate(-50%,-50%); border-radius:.5vw; border:1.5px dashed color-mix(in srgb, var(--gold) 70%, var(--line)); box-sizing:border-box; display:grid; place-items:end center}
+.kslot b{position:absolute; left:50%; top:calc(100% + 2px); transform:translateX(-50%); white-space:nowrap; font-size:clamp(7px, 1.5vw, 11px); color:var(--ink-soft); font-weight:700}
+.kcardb{position:absolute; inset:0; border-radius:8%; box-sizing:border-box}
+.kback{background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.35) 0 18%, transparent 19%), repeating-linear-gradient(45deg, rgba(90,61,0,.14) 0 3px, transparent 3px 7px), linear-gradient(150deg, #f4d06a, #d69e17 55%, #b8840c);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.55), inset 0 0 0 4px rgba(90,61,0,.35), 0 1px 0 #8a6408}
+.kback::after{content:""; position:absolute; inset:34% 26%; background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a3d00' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='8' cy='12' r='4'/%3E%3Cpath d='M12 12h9M18 12v3M21 12v2'/%3E%3C/svg%3E")}
+.kfront{background:linear-gradient(160deg, #fbe39a, #e7b334); color:#3a2700; display:grid; place-items:center; text-align:center; font-weight:800; font-size:clamp(5px, 1.15vw, 9px); line-height:1.15; padding:12%; word-break:keep-all; box-shadow:inset 0 0 0 2px rgba(255,255,255,.6), 0 1px 0 #8a6408}
+.keycard{position:fixed; inset:0; z-index:60; pointer-events:auto; perspective:1100px}
+.kc3{position:absolute; left:50%; top:48%; width:min(74vw, 270px, 50vh); aspect-ratio:5/7; margin-left:calc(min(74vw, 270px, 50vh) / -2); margin-top:calc(min(74vw, 270px, 50vh) * -0.7); transform-style:preserve-3d}
+.kc3 > div{position:absolute; inset:0; border-radius:16px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.kc3 .kb{transform:rotateY(180deg)}
+.kc3 .kf{background:radial-gradient(circle at 50% 30%, rgba(255,255,255,.55), transparent 55%), linear-gradient(160deg, #fde9a6, #e4ad2c 60%, #c8920e); color:#3a2700; padding:18px 18px 16px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.65), inset 0 0 0 7px rgba(90,61,0,.28), 0 18px 40px rgba(0,0,0,.35)}
+.kc3 .kf small{font-family:var(--f-num); font-size:11px; letter-spacing:.24em; font-weight:600}
+.kc3 .kf svg{width:62px; height:62px; stroke:#5a3d00; fill:rgba(255,255,255,.35); stroke-width:1.6; stroke-linecap:round; margin-top:4px}
+.kc3 .kf h3{margin:2px 0 0; font-family:var(--f-display); font-weight:400; font-size:30px; line-height:1.1; word-break:keep-all}
+.kc3 .kf p{margin:0; font-size:15px; line-height:1.5; font-weight:700; word-break:keep-all}
+.kc3 .kf .who{margin-top:auto; font-size:12.5px; font-weight:700; background:rgba(255,255,255,.45); border-radius:999px; padding:4px 12px}
+.kc3 .kf .tap{font-size:11px; opacity:.7; font-weight:600}
 
 /* 말과 건물 — 판 위에 서 있는 그림 (판이 기운 만큼 거꾸로 세움) */
 .toks,.blds{position:absolute; inset:0; pointer-events:none; transform-style:preserve-3d; z-index:5}
@@ -187,25 +202,30 @@ button:disabled{cursor:default; opacity:.45}
 @keyframes floatup{from{transform:translate(-50%,0); opacity:1} to{transform:translate(-50%,-26px); opacity:0}}
 
 /* 땅 문서 카드 — 산 땅은 카드로 모음 */
-.deed{--fs:10px; font-size:var(--fs); width:13em; aspect-ratio:5/7; box-sizing:border-box; background:var(--card); color:#1b2436; border-radius:.9em; padding:.7em; display:flex; flex-direction:column; gap:.35em; position:relative; overflow:hidden;
-  box-shadow:0 .2em 0 rgba(20,34,58,.18), 0 .6em 1.4em rgba(20,34,58,.22); text-align:left}
-.deed .hd{background:var(--sc); color:#fff; border-radius:.5em; padding:.55em .6em .5em; display:grid; gap:.1em; position:relative}
-.deed .hd small{font-size:.78em; font-weight:700; opacity:.92; letter-spacing:.02em; padding-right:3.2em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff}
-.deed .hd b{font-family:var(--f-display); font-weight:400; font-size:1.75em; line-height:1.05; word-break:keep-all}
-.deed .hd .code{position:absolute; right:.55em; top:.45em; font-family:var(--f-num); font-weight:600; font-size:.85em; letter-spacing:.08em; opacity:.85}
-.deed .ic{width:2.6em; height:2.6em; stroke:#fff; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; position:absolute; right:.4em; bottom:.3em; opacity:.9}
-.deed .price{display:flex; justify-content:space-between; font-weight:800; font-size:1.05em; padding:0 .15em}
+.deed{--fs:10px; font-size:var(--fs); width:13em; aspect-ratio:5/7; box-sizing:border-box; border-radius:.9em; padding:.32em; position:relative; overflow:hidden; text-align:left; color:#1b2436;
+  background:repeating-linear-gradient(-45deg, #cf3239 0 .7em, #fffdf6 .7em 1.1em, #23489a 1.1em 1.8em, #fffdf6 1.8em 2.2em);
+  box-shadow:0 .2em 0 rgba(20,34,58,.18), 0 .6em 1.4em rgba(20,34,58,.22)}
+.deed .in{position:absolute; inset:.32em; border-radius:.65em; padding:.55em; display:flex; flex-direction:column; gap:.3em; overflow:hidden;
+  background:radial-gradient(rgba(35,72,154,.08) .09em, transparent .1em) 0 0/.7em .7em, linear-gradient(#fffdf6, #f6f1e2)}
+.deed .hd{background:linear-gradient(135deg, color-mix(in srgb, var(--sc) 82%, #fff), var(--sc) 60%); color:#fff; border-radius:.5em; padding:.5em .6em .55em; display:grid; gap:.08em; position:relative; min-height:4.2em; box-sizing:border-box}
+.deed .hd small{font-size:.74em; font-weight:700; letter-spacing:.02em; padding-right:3.6em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; opacity:.95}
+.deed .hd b{font-family:var(--f-display); font-weight:400; font-size:1.7em; line-height:1.05; word-break:keep-all; text-shadow:0 .06em 0 rgba(0,0,0,.18); padding-right:1.8em}
+.deed .hd em{font-style:normal; font-size:.8em; font-weight:700; opacity:.92}
+.deed .hd .flag{position:absolute; right:.5em; top:.5em; width:3em; height:2em; border-radius:.2em; box-shadow:0 0 0 .1em rgba(255,255,255,.85), 0 .15em .3em rgba(0,0,0,.3)}
+.deed .hd .ic{width:2.6em; height:2.6em; stroke:#fff; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; position:absolute; right:.4em; top:.4em; opacity:.95}
+.deed .price{display:flex; justify-content:space-between; align-items:baseline; font-weight:800; font-size:1.05em; padding:0 .15em}
 .deed .price span:last-child{font-family:var(--f-num)}
-.deed table{width:100%; border-collapse:collapse; font-size:.92em}
-.deed td{padding:.18em .15em; border-bottom:1px dashed rgba(27,36,54,.2); color:#1b2436}
+.deed table{width:100%; border-collapse:collapse; font-size:.9em}
+.deed td{padding:.15em .15em; border-bottom:1px dashed rgba(27,36,54,.2); color:#1b2436}
 .deed td:last-child{text-align:right; font-family:var(--f-num); font-weight:600}
 .deed tr.now td{color:var(--sc); font-weight:800}
-.deed .ft{margin-top:auto; font-size:.78em; color:#5b6779; line-height:1.35}
-.deed .stamp{position:absolute; right:.6em; bottom:2.6em; width:5.2em; height:5.2em; border-radius:50%; border:.28em double var(--oc); color:var(--oc); display:grid; place-items:center; text-align:center; font-weight:800; font-size:.9em; line-height:1.1; transform:rotate(-14deg); opacity:.88; background:color-mix(in srgb, var(--oc) 8%, transparent); padding:.3em; box-sizing:border-box; word-break:keep-all}
+.deed .ft{margin-top:auto; font-size:.74em; color:#5b6779; line-height:1.3; display:flex; justify-content:space-between; gap:.5em; align-items:flex-end}
+
+.deed .stamp{position:absolute; right:.9em; bottom:2.9em; width:5.2em; height:5.2em; border-radius:50%; border:.28em double var(--oc); color:var(--oc); display:grid; place-items:center; text-align:center; font-weight:800; font-size:.9em; line-height:1.1; transform:rotate(-14deg); opacity:.9; background:color-mix(in srgb, var(--oc) 8%, transparent); padding:.3em; box-sizing:border-box; word-break:keep-all}
 .deed.big{--fs:15px}
 .deed.mini{--fs:8.4px}
 .deed.ghost{background:var(--paper-2); box-shadow:none; border:1.5px dashed var(--line); color:var(--ink-soft)}
-.deed.ghost > *{visibility:hidden}
+.deed.ghost .in{visibility:hidden}
 .deed.ghost::after{content:attr(data-name); position:absolute; inset:0; display:grid; place-items:center; font-weight:800; font-size:1.2em; color:var(--ink-soft); text-align:center; padding:1em; word-break:keep-all}
 .deed.taken{filter:grayscale(.85); opacity:.55}
 .cardfx{position:fixed; z-index:60; left:50%; top:46%; pointer-events:none; perspective:900px}
@@ -341,6 +361,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
       <div class="news" id="news"></div>
       <div class="facts" id="facts"></div>
     </div>
+    <div class="kpile" id="kpile"></div>
     <div class="blds" id="blds"></div>
     <div class="toks" id="toks"></div>
     <div class="dicezone" id="dicezone"></div>
@@ -352,6 +373,68 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
 <div class="toast" id="toast" role="status"></div>
 <canvas class="confetti" id="fx" hidden></canvas>
 
+<script>/* 국기 (30×20 SVG를 직접 그림 — 간단히 줄인 모양) */
+(function (root) {
+  'use strict';
+  function star(cx, cy, r, fill, rot) {
+    var p = [], a0 = (rot || -90) * Math.PI / 180;
+    for (var i = 0; i < 10; i++) {
+      var rr = i % 2 ? r * 0.4 : r, a = a0 + i * Math.PI / 5;
+      p.push((cx + rr * Math.cos(a)).toFixed(2) + ',' + (cy + rr * Math.sin(a)).toFixed(2));
+    }
+    return '<polygon points="' + p.join(' ') + '" fill="' + fill + '"/>';
+  }
+  function rect(x, y, w, h, f) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + f + '"/>'; }
+  function hbands(cols) { var h = 20 / cols.length; return cols.map(function (c, i) { return rect(0, i * h, 30, h + 0.05, c); }).join(''); }
+  function vbands(cols, ws) { var x = 0, tot = ws ? ws.reduce(function (a, b) { return a + b; }, 0) : cols.length; return cols.map(function (c, i) { var w = 30 * (ws ? ws[i] : 1) / tot, r = rect(x, 0, w + 0.05, 20, c); x += w; return r; }).join(''); }
+  var UK = rect(0, 0, 30, 20, '#012169') +
+    '<path d="M0 0L30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L30 20M30 0L0 20" stroke="#C8102E" stroke-width="1.4"/>' +
+    '<path d="M15 0v20M0 10h30" stroke="#fff" stroke-width="6"/><path d="M15 0v20M0 10h30" stroke="#C8102E" stroke-width="3.4"/>';
+  var nordic = function (bg, cr, inner) { return rect(0, 0, 30, 20, bg) + rect(8, 0, 4, 20, cr) + rect(0, 8, 30, 4, cr) + (inner ? rect(9, 0, 2, 20, inner) + rect(0, 9, 30, 2, inner) : ''); };
+  var F = {
+    kr: rect(0, 0, 30, 20, '#fff') +
+      '<g transform="rotate(33.7 15 10)"><path d="M10 10a5 5 0 0 1 10 0z" fill="#CD2E3A"/><path d="M10 10a5 5 0 0 0 10 0z" fill="#0047A0"/><circle cx="12.5" cy="10" r="2.5" fill="#CD2E3A"/><circle cx="17.5" cy="10" r="2.5" fill="#0047A0"/></g>' +
+      [[5, 4.2, -33], [25, 15.8, -33], [25, 4.2, 33], [5, 15.8, 33]].map(function (t) {
+        return '<g transform="translate(' + t[0] + ' ' + t[1] + ') rotate(' + t[2] + ')">' + rect(-2.4, -1.9, 4.8, 0.85, '#000') + rect(-2.4, -0.42, 4.8, 0.85, '#000') + rect(-2.4, 1.05, 4.8, 0.85, '#000') + '</g>';
+      }).join(''),
+    jp: rect(0, 0, 30, 20, '#fff') + '<circle cx="15" cy="10" r="6" fill="#BC002D"/>',
+    cn: rect(0, 0, 30, 20, '#EE1C25') + star(5, 5, 3, '#FFFF00') + star(10, 2, 1, '#FFFF00', -60) + star(12, 4, 1, '#FFFF00', -80) + star(12, 7, 1, '#FFFF00', -100) + star(10, 9, 1, '#FFFF00', -120),
+    tw: rect(0, 0, 30, 20, '#FE0000') + rect(0, 0, 15, 10, '#000095') + star(7.5, 5, 3.2, '#fff') + '<circle cx="7.5" cy="5" r="1.8" fill="#000095"/><circle cx="7.5" cy="5" r="1.45" fill="#fff"/>',
+    ph: rect(0, 0, 30, 10, '#0038A8') + rect(0, 10, 30, 10, '#CE1126') + '<path d="M0 0L17.3 10L0 20z" fill="#fff"/><circle cx="5.6" cy="10" r="1.9" fill="#FCD116"/>' + star(1.8, 2.6, 0.9, '#FCD116') + star(1.8, 17.4, 0.9, '#FCD116') + star(13.6, 10, 0.9, '#FCD116'),
+    sg: rect(0, 0, 30, 10, '#EF3340') + rect(0, 10, 30, 10, '#fff') + '<circle cx="6.2" cy="5" r="3.4" fill="#fff"/><circle cx="7.6" cy="5" r="3.2" fill="#EF3340"/>' +
+      [[10, 3], [12.4, 4.6], [11.5, 7.2], [8.6, 7.2], [7.7, 4.6]].map(function (s) { return star(s[0], s[1], 0.75, '#fff'); }).join(''),
+    eg: hbands(['#CE1126', '#fff', '#000']) + '<path d="M15 7.6l1.6 1.3-.4 2.4h-2.4l-.4-2.4z" fill="#C09300"/><path d="M12.6 8.8l2.4 1.2 2.4-1.2-.6 2.6h-3.6z" fill="#C09300" opacity=".85"/>',
+    tr: rect(0, 0, 30, 20, '#E30A17') + '<circle cx="11" cy="10" r="5" fill="#fff"/><circle cx="12.3" cy="10" r="4" fill="#E30A17"/>' + star(17.4, 10, 2.4, '#fff', 180),
+    gr: (function () { var s = ''; for (var i = 0; i < 9; i++) s += rect(0, i * 20 / 9, 30, 20 / 9 + 0.05, i % 2 ? '#fff' : '#0D5EAF'); return s; })() + rect(0, 0, 11.1, 11.1, '#0D5EAF') + rect(4.44, 0, 2.22, 11.1, '#fff') + rect(0, 4.44, 11.1, 2.22, '#fff'),
+    dk: nordic('#C8102E', '#fff'),
+    se: nordic('#006AA7', '#FECC02'),
+    ch: rect(0, 0, 30, 20, '#DA291C') + rect(13.2, 4.5, 3.6, 11, '#fff') + rect(9.5, 8.2, 11, 3.6, '#fff'),
+    de: hbands(['#000', '#DD0000', '#FFCE00']),
+    ca: vbands(['#D80621', '#fff', '#D80621'], [1, 2, 1]) + '<path d="M15 4l1 2 1.4-.6-.5 3 1.8-1.6.4 1 1.6-.3-.6 1.7.8.6-3 2.3.4 1.2-2.7-.4V16h-.6v-2.4l-2.7.4.4-1.2-3-2.3.8-.6-.6-1.7 1.6.3.4-1 1.8 1.6-.5-3 1.4.6z" fill="#D80621"/>',
+    ar: hbands(['#74ACDF', '#fff', '#74ACDF']) + '<circle cx="15" cy="10" r="1.9" fill="#F6B40E"/>',
+    br: rect(0, 0, 30, 20, '#009C3B') + '<path d="M3 10L15 2.2L27 10L15 17.8z" fill="#FFDF00"/><circle cx="15" cy="10" r="4.4" fill="#002776"/><path d="M10.8 9.2c2.8-.6 6-.3 8.3 1.2" stroke="#fff" stroke-width=".8" fill="none"/>',
+    au: rect(0, 0, 30, 20, '#012169') + '<g transform="scale(.5)">' + UK + '</g>' + star(7.5, 15.2, 2.2, '#fff') + star(22.5, 15.5, 1.1, '#fff') + star(19.5, 8.5, 1.1, '#fff') + star(22.5, 3.5, 1.1, '#fff') + star(25.8, 7.5, 1.1, '#fff') + star(24.3, 10.6, 0.6, '#fff'),
+    us: (function () { var s = rect(0, 0, 30, 20, '#fff'); for (var i = 0; i < 13; i += 2) s += rect(0, i * 20 / 13, 30, 20 / 13, '#B22234'); s += rect(0, 0, 12, 20 * 7 / 13, '#3C3B6E'); for (var r = 0; r < 5; r++) for (var c = 0; c < 6; c++) s += '<circle cx="' + (1.1 + c * 1.9 + (r % 2) * 0.95).toFixed(2) + '" cy="' + (1.2 + r * 2.4) + '" r=".45" fill="#fff"/>'; return s; })(),
+    pt: vbands(['#046A38', '#DA291C'], [2, 3]) + '<circle cx="12" cy="10" r="3.6" fill="#FFE900"/><rect x="10.6" y="8.2" width="2.8" height="3.6" rx=".8" fill="#DA291C" stroke="#fff" stroke-width=".5"/>',
+    es: hbands(['#AA151B', '#F1BF00', '#F1BF00', '#AA151B']) + '<rect x="7" y="7.2" width="3" height="5" rx=".6" fill="#AA151B" opacity=".75"/>',
+    fr: vbands(['#002395', '#fff', '#ED2939']),
+    it: vbands(['#009246', '#fff', '#CE2B37']),
+    gb: UK
+  };
+  var PLACE = {
+    TPE: ['tw', '타이완'], PEK: ['cn', '중국'], MNL: ['ph', '필리핀'], CJU: ['kr', '대한민국'], PUS: ['kr', '대한민국'], SEL: ['kr', '대한민국'],
+    SIN: ['sg', '싱가포르'], CAI: ['eg', '이집트'], IST: ['tr', '튀르키예'], ATH: ['gr', '그리스'], CPH: ['dk', '덴마크'], STO: ['se', '스웨덴'],
+    BRN: ['ch', '스위스'], BER: ['de', '독일'], YOW: ['ca', '캐나다'], EZE: ['ar', '아르헨티나'], GRU: ['br', '브라질'], SYD: ['au', '오스트레일리아'],
+    HNL: ['us', '미국'], LIS: ['pt', '포르투갈'], MAD: ['es', '스페인'], TYO: ['jp', '일본'], PAR: ['fr', '프랑스'], ROM: ['it', '이탈리아'],
+    LON: ['gb', '영국'], NYC: ['us', '미국']
+  };
+  function flag(code, cls) {
+    if (!F[code]) return '';
+    return '<svg class="' + (cls || 'flag') + '" viewBox="0 0 30 20" preserveAspectRatio="none" aria-hidden="true">' + F[code] + '</svg>';
+  }
+  root.FLAGS = { flag: flag, PLACE: PLACE, codes: Object.keys(F) };
+})(this);
+</script>
 <script>/* 한판 세계여행 규칙 엔진 — 상태는 JSON, apply로만 바뀜
  * 돈 단위는 천 원 (200 = 20만 원)
  */
@@ -1129,10 +1212,10 @@ function drawBoard(){
     if (t.k === 'city'){
       d.classList.add(bandSide(i));
       d.style.setProperty('--sc', 'var(--s' + WT.sideOf(i) + ')');
-      html = '<span class="band"></span><span class="tn">' + esc(name) + '</span><span class="tp"></span>';
+      html = '<span class="band"></span>' + FLAGS.flag(FLAGS.PLACE[t.en][0], 'tflag') + '<span class="tn">' + esc(name) + '</span><span class="tp"></span>';
     } else if (t.k === 'spot' || t.k === 'ride'){
       d.classList.add(bandSide(i));
-      html = '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.en] || '') + '</svg><span class="tn">' + esc(name) + '</span><span class="tp"></span>';
+      html = (t.k === 'spot' ? FLAGS.flag('kr', 'tflag') : '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.en] || '') + '</svg>') + '<span class="tn">' + esc(name) + '</span><span class="tp"></span>';
     } else if (t.k === 'key'){
       d.classList.add('key');
       html = '<svg class="ic" viewBox="0 0 24 24">' + ICONS.key + '</svg><span class="tn">황금열쇠</span>';
@@ -1258,7 +1341,7 @@ function renderBlds(){
 // ── 주사위 ──
 var FACE_PIPS = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
 var FACE_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] }; // 그 눈이 위로 오게 [X, Y]
-var REST = [[43.5, 47], [56.5, 47.5]];
+var REST = [[43.5, 50], [56.5, 50.5]];
 var diceZ = [0, 0];
 function buildDice(){
   var z = $('dicezone'), h = '';
@@ -1342,22 +1425,25 @@ function setNews(html, color){ var n = $('news'); n.innerHTML = html; n.style.se
 
 // ── 땅 문서 카드 ──
 function deedColor(i){ var k = T[i].k; return k === 'city' ? 'var(--s' + WT.sideOf(i) + ')' : k === 'spot' ? 'var(--air-red)' : 'var(--air-blue)'; }
+function placeOf(i){ return FLAGS.PLACE[T[i].en] || null; }
 function deedHTML(i, o){
   o = o || {};
-  var t = T[i], own = G && G.own[i] >= 0 ? G.own[i] : -1, lv = own >= 0 ? G.lv[i] : -1;
+  var t = T[i], own = G && G.own[i] >= 0 ? G.own[i] : -1, lv = own >= 0 ? G.lv[i] : -1, pl = placeOf(i);
   var kind = t.k === 'city' ? SIDE_NAME[WT.sideOf(i)] : t.k === 'spot' ? '관광지' : '탈것';
-  var h = '<div class="deed ' + (o.cls || '') + '" style="--sc:' + deedColor(i) + (own >= 0 ? ';--oc:' + pc(own) : '') + '" data-name="' + esc(t.n) + '">' +
-    '<div class="hd"><small>' + kind + '</small><b>' + esc(t.n) + '</b><span class="code">' + (t.en || '') + '</span>' +
-    (t.k !== 'city' ? '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.en] || '') + '</svg>' : '') + '</div>' +
+  var h = '<div class="deed ' + (o.cls || '') + '" style="--sc:' + deedColor(i) + (own >= 0 ? ';--oc:' + pc(own) : '') + '" data-name="' + esc(t.n) + '"><div class="in">' +
+    '<div class="hd"><small>' + kind + ' · No.' + ('0' + i).slice(-2) + '</small><b>' + esc(t.n) + '</b><em>' + (pl ? pl[1] : '세계 어디로나') + '</em>' +
+    (pl ? FLAGS.flag(pl[0]) : '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.en] || '') + '</svg>') + '</div>' +
     '<div class="price"><span>땅값</span><span>' + won(t.p) + '</span></div><table>';
+  var serial = '';
   if (t.k === 'city'){
     for (var k = 0; k <= 4; k++) h += '<tr class="' + (k === lv ? 'now' : '') + '"><td>' + (k ? WT.LV_NAME[k] : '대지료') + '</td><td>' + won(t.t[k]) + '</td></tr>';
-    h += '</table><div class="ft">짓기 별장 ' + won(t.b[0]) + '씩 · 빌딩 +' + won(t.b[1] - 2 * t.b[0]) + ' · 호텔 +' + won(t.b[2] - t.b[1]) + '</div>';
+    h += '</table><div class="ft"><span>짓기 별장 ' + won(t.b[0]) + '씩 · 빌딩 +' + won(t.b[1] - 2 * t.b[0]) + ' · 호텔 +' + won(t.b[2] - t.b[1]) + '</span>' + serial + '</div>';
   } else {
     h += '<tr class="now"><td>통행료</td><td>' + won(t.t[0]) + '</td></tr>';
     if (i === WT.SHUTTLE) h += '<tr><td>우주여행 이용료</td><td>' + won(WT.SPACE_FEE) + '</td></tr>';
-    h += '</table><div class="ft">' + (t.k === 'spot' ? '건물을 지을 수 없는 관광지' : '건물을 지을 수 없는 탈것') + '</div>';
+    h += '</table><div class="ft"><span>' + (t.k === 'spot' ? '건물을 지을 수 없는 관광지' : '건물을 지을 수 없는 탈것') + '</span>' + serial + '</div>';
   }
+  h += '</div>';
   if (own >= 0 && o.stamp !== false) h += '<div class="stamp">' + esc(G.players[own].name) + '</div>';
   return h + '</div>';
 }
@@ -1592,17 +1678,78 @@ async function flyAnim(p, to, ms0){
   await wait(ms0 || 750);
   e.classList.remove('fly');
 }
+// ── 황금열쇠 더미 ──
+var PILE = { top:-1 };
+var KEY_ICON = '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>';
+function deckCount(g){ return typeof g.deck === 'number' ? g.deck : g.deck.length; }
+function discCount(g){ return typeof g.disc === 'number' ? g.disc : g.disc.length; }
+function renderPile(nDeck, topId){
+  if (!G) return;
+  var box = $('kpile');
+  if (!box.firstChild) box.innerHTML = '<div class="kslot" id="kdeck" style="left:40%;top:32%"><b>황금열쇠</b></div><div class="kslot" id="kdisc" style="left:60%;top:32%"><b>쓴 카드</b></div>';
+  var n = nDeck == null ? deckCount(G) : nDeck, layers = Math.min(n, 6), h = '';
+  for (var k = 0; k < layers; k++) h += '<div class="kcardb kback" style="transform:translate(' + (-k * 0.5) + 'px,' + (-k * 0.7) + 'px) translateZ(' + (k * 1.4) + 'px)"></div>';
+  setPileCards($('kdeck'), h);
+  var top = topId == null ? PILE.top : topId;
+  if (top < 0 && Array.isArray(G.disc) && G.disc.length) top = G.disc[G.disc.length - 1];
+  var dn = discCount(G), dh = '';
+  if (dn > 0 || top >= 0){
+    var lay = Math.min(Math.max(dn, 1), 4);
+    for (k = 0; k < lay - 1; k++) dh += '<div class="kcardb kfront" style="transform:translate(' + (k * 0.6) + 'px,' + (-k * 0.6) + 'px) translateZ(' + (k * 1.2) + 'px) rotate(' + ((k % 2 ? 4 : -3)) + 'deg)"></div>';
+    dh += '<div class="kcardb kfront" style="transform:translateZ(' + ((lay - 1) * 1.2 + .5) + 'px) rotate(-2deg)">' + (top >= 0 ? esc(WT.KEYS[top].n) : '황금열쇠') + '</div>';
+  }
+  setPileCards($('kdisc'), dh);
+}
+function setPileCards(slot, html){
+  var label = slot.querySelector('b').outerHTML;
+  if (slot._h === html) return;
+  slot._h = html; slot.innerHTML = html + label;
+  slot.style.transformStyle = 'preserve-3d';
+}
+// 더미 맨 위 카드를 집어 뒤집어서 보여 줌 → 다 읽으면 쓴 카드 자리(보관 카드는 그 사람 칸)로
 var keyT = 0, keySkip = null;
-function showKey(id, mine){
-  var k = WT.KEYS[id], box = document.createElement('div');
+function showKey(id, p){
+  var k = WT.KEYS[id], mine = isMineSeat(p), keep = k.f === 'keep';
+  var deck = $('kdeck'), r0 = deck.getBoundingClientRect();
+  var n0 = deckCount(G);
+  renderPile(Math.max(0, (n0 || WT.KEYS.length) - 1));
+  var box = document.createElement('div');
   box.className = 'keycard';
-  box.innerHTML = '<div class="kc" role="dialog" aria-label="황금열쇠"><small>GOLDEN KEY · 황금열쇠</small><h3>' + esc(k.n) + '</h3><p>' + esc(k.d) + '</p></div>';
+  box.innerHTML = '<div class="kc3" role="dialog" aria-label="황금열쇠 ' + esc(k.n) + '"><div class="kf"><small>GOLDEN KEY</small><svg viewBox="0 0 24 24">' + KEY_ICON + '</svg><h3>' + esc(k.n) + '</h3><p>' + esc(k.d) + '</p>' +
+    '<span class="who" style="color:' + pc(p) + '">' + esc(G.players[p].name) + ' 님이 뽑았어요</span><span class="tap">눌러서 닫기</span></div><div class="kb kcardb kback"></div></div>';
   document.body.appendChild(box);
-  snd('key');
+  var card = box.firstChild, cr = card.getBoundingClientRect();
+  var tilt = parseFloat(getComputedStyle($('stage')).getPropertyValue('--tilt')) || 0;
+  var from = function(r, flip){
+    var dx = (r.left + r.width / 2) - (cr.left + cr.width / 2), dy = (r.top + r.height / 2) - (cr.top + cr.height / 2), sc = Math.max(0.08, r.width / cr.width);
+    return 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ') rotateX(' + tilt + 'deg) rotateY(' + (flip ? 180 : 0) + 'deg)';
+  };
+  card.animate([
+    { transform:from(r0, true), offset:0 },
+    { transform:from(r0, true).replace(/translate\(([-\d.]+)px,([-\d.]+)px\)/, function(m, x, y){ return 'translate(' + (x * 0.75) + 'px,' + (y * 0.75 - 50) + 'px)'; }).replace(/scale\(([\d.]+)\)/, function(m, v){ return 'scale(' + Math.min(1, v * 2) + ')'; }), offset:0.35, easing:'ease-in-out' },
+    { transform:'translate(0,0) scale(1) rotateX(0deg) rotateY(0deg)', offset:1 }
+  ], { duration:ms(820), easing:'cubic-bezier(.3,.7,.3,1)', fill:'forwards' });
+  snd('flip');
+  setTimeout(function(){ snd('key'); }, ms(600));
   return new Promise(function(res){
-    var done = function(){ if (!box.isConnected) return; box.remove(); clearTimeout(keyT); keySkip = null; res(); };
+    var closing = false;
+    var done = function(){
+      if (closing) return; closing = true;
+      clearTimeout(keyT); keySkip = null;
+      var target;
+      if (keep){ var pp = $('pp' + p); target = pp ? pp.getBoundingClientRect() : null; }
+      else target = $('kdisc').getBoundingClientRect();
+      if (!target){ box.remove(); res(); return; }
+      var a = card.animate([{ transform:'translate(0,0) scale(1) rotateX(0deg) rotateY(0deg)' }, { transform:from(target, false) + (keep ? ' rotate(14deg)' : ' rotate(-2deg)'), opacity:keep ? 0.4 : 1 }], { duration:ms(460), easing:'cubic-bezier(.5,0,.6,1)', fill:'forwards' });
+      setTimeout(function(){
+        box.remove();
+        if (!keep){ PILE.top = id; renderPile(Math.max(0, (n0 || WT.KEYS.length) - 1), id); }
+        else { var pp2 = $('pp' + p); if (pp2){ pp2.classList.remove('bump'); void pp2.offsetWidth; pp2.classList.add('bump'); } }
+        snd('card'); res();
+      }, ms(450));
+    };
     keySkip = done; box.onclick = done;
-    keyT = setTimeout(done, ms(mine ? 2600 : 2000));
+    keyT = setTimeout(done, ms(820 + (mine ? 2800 : 2100)));
   });
 }
 
@@ -1625,7 +1772,7 @@ async function play(g){
       case 'warp': await flyAnim(e.p, e.to, 600); break;
       case 'fly': setNews(line); await flyAnim(e.p, e.to, 800); break;
       case 'salary': money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); break;
-      case 'key': setNews(line); await showKey(e.c, isMineSeat(e.p)); break;
+      case 'key': setNews(line); await showKey(e.c, e.p); break;
       case 'buy': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('buy'); setNews(line); G.own = G.own.slice(); G.own[e.t] = e.p; renderTiles(); await flyDeed(e.t, e.p); renderPeople(); money.forEach(function(v, i){ setMoney(i, v); }); break;
       case 'build': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('build'); setNews(line); G.lv = G.lv.slice(); G.lv[e.t] = e.lv; renderTiles(); await wait(750); break;
       case 'toll': case 'spacefee': case 'gift':
@@ -1665,7 +1812,7 @@ function render(){
   if (!G) return;
   if (tokEls.length !== G.players.length) buildToks();
   if (!busy) DP = G.players.map(function(p){ return p.pos; });
-  renderPeople(); renderTiles(); placeToks(); renderFacts(); renderAct(); updateClock();
+  renderPeople(); renderTiles(); placeToks(); renderFacts(); renderAct(); updateClock(); renderPile();
   $('bSay').hidden = MODE !== 'online';
 }
 
@@ -1935,7 +2082,7 @@ function startLocal(tab){
   var seed = Math.floor(rnd() * 4294967296);
   MODE = 'local'; DEMO = false;
   G = WT.newGame(ps, cfg, Math.floor(rnd() * ps.length), seed, Date.now());
-  store.mode = tab; LOG = []; $('logl').innerHTML = ''; SEL = -1;
+  store.mode = tab; PILE.top = -1; $('kpile').innerHTML = ''; LOG = []; $('logl').innerHTML = ''; SEL = -1;
   buildToks(); showDice([1, 1]);
   render(); setNews(pn(G.turn) + ' 님부터 출발!'); logLine('여행 시작! ' + pn(G.turn) + ' 님부터');
   persist(); next();
@@ -2118,7 +2265,7 @@ function pump(){
     var fresh = it.round !== NET.round;
     NET.round = it.round; NET.pending = false;
     G = g; SEL = -1;
-    if (fresh){ buildToks(); LOG = []; $('logl').innerHTML = ''; if (SHEET === 'over') closeSheet(); setNews(pn(g.turn) + ' 님부터 출발!'); }
+    if (fresh){ buildToks(); PILE.top = -1; $('kpile').innerHTML = ''; LOG = []; $('logl').innerHTML = ''; if (SHEET === 'over') closeSheet(); setNews(pn(g.turn) + ' 님부터 출발!'); }
     render();
     if (g.phase === 'over' && SHEET !== 'over') overSheet();
   }
@@ -2190,6 +2337,7 @@ function snd(k){
       case 'fly': tone(300, .5, 'sawtooth', .03); tone(600, .5, 'sine', .05, .1); break;
       case 'sad': tone(330, .2, 'triangle', .1); tone(262, .35, 'triangle', .1, .18); break;
       case 'clack': tone(900 + Math.random() * 300, .03, 'square', .05); tone(200, .05, 'triangle', .12); break;
+      case 'flip': tone(500, .05, 'triangle', .06); tone(800, .06, 'triangle', .05, .06); break;
       case 'stamp': tone(120, .12, 'square', .12); tone(80, .2, 'triangle', .2, .02); break;
       case 'card': tone(1400, .05, 'sine', .05); tone(1800, .08, 'sine', .04, .04); break;
       case 'turn': tone(880, .09, 'sine', .08); tone(1175, .14, 'sine', .08, .09); break;

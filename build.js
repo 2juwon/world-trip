@@ -3,9 +3,10 @@ const fs = require('fs');
 const ui = fs.readFileSync(__dirname + '/src/ui.html', 'utf8');
 const eng = fs.readFileSync(__dirname + '/src/engine.js', 'utf8');
 const ai = fs.readFileSync(__dirname + '/src/ai.js', 'utf8');
+const flags = fs.readFileSync(__dirname + '/src/flags.js', 'utf8');
 const cfg = JSON.parse(fs.readFileSync(__dirname + '/config.json', 'utf8'));
 const server = process.env.SERVER != null ? process.env.SERVER : (cfg.server || '');
-const core = ui.replace('/*ENGINE*/', () => eng).replace('/*AI*/', () => ai);
+const core = ui.replace('/*FLAGS*/', () => flags).replace('/*ENGINE*/', () => eng).replace('/*AI*/', () => ai);
 const out = core.replace("'__SERVER_URL__'", "''"); // 아티팩트는 다른 서버에 접속할 수 없음
 const pagesOut = core.replace("'__SERVER_URL__'", JSON.stringify(server));
 fs.mkdirSync(__dirname + '/dist', { recursive: true });
