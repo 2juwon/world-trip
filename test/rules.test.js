@@ -240,11 +240,9 @@ t('땅 인수: 통행료를 내고 나서 2배 값에 가져올지 고름', () =
   eq(g.phase, 'build'); // 가져온 뒤 바로 더 지을 수 있음
   g = W.apply(g, { type: 'skip' }); eq(g.turn, 1);
 });
-t('땅 인수: 안 하면 그냥 넘어감, 호텔·돈 모자람·설정 끔이면 안 물어봄', () => {
+t('땅 인수: 안 하면 그냥 넘어감, 돈 모자람·설정 끔이면 안 물어봄', () => {
   let g = W.apply(roll(st(g2({ takeover: true }), (c) => { c.own[3] = 1; }), 1, 2), { type: 'skip' });
   eq(g.own[3], 1); eq(g.turn, 1);
-  g = roll(st(g2({ takeover: true }), (c) => { c.own[3] = 1; c.lv[3] = 4; }), 1, 2);
-  eq(g.turn, 1); eq(g.own[3], 1);
   g = roll(st(g2({ takeover: true }), (c) => { c.own[3] = 1; c.players[0].money = 100; }), 1, 2);
   eq(g.turn, 1);
   g = roll(st(g2(), (c) => { c.own[3] = 1; }), 1, 2);
@@ -263,6 +261,13 @@ t('땅 인수 뒤 더블이면 한 번 더', () => {
   g = W.apply(g, { type: 'takeover' });
   eq(g.phase, 'build'); g = W.apply(g, { type: 'skip' });
   eq(g.turn, 0); eq(g.phase, 'roll');
+});
+
+t('땅 인수: 호텔이 있는 땅은 3배, 가져오면 짓기 없이 넘어감', () => {
+  let g = roll(st(g2({ takeover: true }), (c) => { c.own[3] = 1; c.lv[3] = 4; }), 1, 2);
+  eq(g.phase, 'takeover'); eq(g.pend.a, 3 * (80 + 250));
+  g = W.apply(g, { type: 'takeover' });
+  eq(g.own[3], 0); eq(g.lv[3], 4); eq(g.players[0].money, 2930 - 450 - 990); eq(g.turn, 1);
 });
 
 console.log(`\n규칙 시험 ${pass}개 통과` + (fail ? `, ${fail}개 실패` : ''));

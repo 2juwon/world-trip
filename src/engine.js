@@ -102,7 +102,7 @@
     start: 2930,       // 시작 자금 293만 원
     triple: true,      // 더블 세 번이면 무인도
     buildOnBuy: false, // 산 차례에 바로 건물 (원작은 다음 방문부터)
-    takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배) 주고 인수 (호텔은 못 함)
+    takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배, 호텔이 있으면 3배) 주고 인수
     rounds: 0,         // 0 = 끝까지(파산), n = n바퀴 뒤 총자산
     timeMin: 0         // 0 = 시간 제한 없음, n분이 지나면 그 바퀴까지
   };
@@ -292,11 +292,12 @@
     return done(g);
   }
 
-  // 땅 인수: 웃돈(땅값+건물값의 2배)을 주인에게 주고 가져옴. 호텔은 못 가져감
-  function takeoverPrice(g, i) { return 2 * (T[i].p + buildValue(i, g.lv[i])); }
+  // 땅 인수: 웃돈(땅값+건물값의 2배, 호텔이 있으면 3배)을 주인에게 주고 가져옴
+  function takeoverRate(g, i) { return g.lv[i] >= 4 ? 3 : 2; }
+  function takeoverPrice(g, i) { return takeoverRate(g, i) * (T[i].p + buildValue(i, g.lv[i])); }
   function canTakeover(g, pi, i) {
     var o = g.own[i];
-    return !!g.cfg.takeover && o >= 0 && o !== pi && !g.players[o].out && !g.players[pi].out && g.lv[i] < 4 && g.players[pi].money >= takeoverPrice(g, i);
+    return !!g.cfg.takeover && o >= 0 && o !== pi && !g.players[o].out && !g.players[pi].out && g.players[pi].money >= takeoverPrice(g, i);
   }
   function afterToll(g, i) {
     if (g.phase === 'over') return;
@@ -576,7 +577,7 @@
     T: T, N: N, KEYS: KEYS, START: START, ISLAND: ISLAND, FUND: FUND, SPACE: SPACE, DONATE: DONATE, SHUTTLE: SHUTTLE,
     SALARY: SALARY, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
     sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf,
-    takeoverPrice: takeoverPrice, canTakeover: canTakeover,
+    takeoverPrice: takeoverPrice, takeoverRate: takeoverRate, canTakeover: canTakeover,
     newGame: newGame, apply: apply, legal: legal, viewFor: viewFor, actor: actor,
     assets: assets, owned: owned, alive: alive, sellValueAll: sellValueAll, autoSellOrder: autoSellOrder, clone: clone
   };

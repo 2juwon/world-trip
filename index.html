@@ -597,7 +597,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
     start: 2930,       // 시작 자금 293만 원
     triple: true,      // 더블 세 번이면 무인도
     buildOnBuy: false, // 산 차례에 바로 건물 (원작은 다음 방문부터)
-    takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배) 주고 인수 (호텔은 못 함)
+    takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배, 호텔이 있으면 3배) 주고 인수
     rounds: 0,         // 0 = 끝까지(파산), n = n바퀴 뒤 총자산
     timeMin: 0         // 0 = 시간 제한 없음, n분이 지나면 그 바퀴까지
   };
@@ -787,11 +787,12 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
     return done(g);
   }
 
-  // 땅 인수: 웃돈(땅값+건물값의 2배)을 주인에게 주고 가져옴. 호텔은 못 가져감
-  function takeoverPrice(g, i) { return 2 * (T[i].p + buildValue(i, g.lv[i])); }
+  // 땅 인수: 웃돈(땅값+건물값의 2배, 호텔이 있으면 3배)을 주인에게 주고 가져옴
+  function takeoverRate(g, i) { return g.lv[i] >= 4 ? 3 : 2; }
+  function takeoverPrice(g, i) { return takeoverRate(g, i) * (T[i].p + buildValue(i, g.lv[i])); }
   function canTakeover(g, pi, i) {
     var o = g.own[i];
-    return !!g.cfg.takeover && o >= 0 && o !== pi && !g.players[o].out && !g.players[pi].out && g.lv[i] < 4 && g.players[pi].money >= takeoverPrice(g, i);
+    return !!g.cfg.takeover && o >= 0 && o !== pi && !g.players[o].out && !g.players[pi].out && g.players[pi].money >= takeoverPrice(g, i);
   }
   function afterToll(g, i) {
     if (g.phase === 'over') return;
@@ -1071,7 +1072,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
     T: T, N: N, KEYS: KEYS, START: START, ISLAND: ISLAND, FUND: FUND, SPACE: SPACE, DONATE: DONATE, SHUTTLE: SHUTTLE,
     SALARY: SALARY, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
     sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf,
-    takeoverPrice: takeoverPrice, canTakeover: canTakeover,
+    takeoverPrice: takeoverPrice, takeoverRate: takeoverRate, canTakeover: canTakeover,
     newGame: newGame, apply: apply, legal: legal, viewFor: viewFor, actor: actor,
     assets: assets, owned: owned, alive: alive, sellValueAll: sellValueAll, autoSellOrder: autoSellOrder, clone: clone
   };
@@ -1713,8 +1714,8 @@ function renderDecide(){
     '<button class="dmin" id="dMin" aria-label="잠깐 판 보기">판 보기</button></div>';
   if (G.phase === 'takeover'){
     var tk = G.pend, toll = WT.tollOf(G, i);
-    html = head + timer + '<div class="buyrow">' + deedHTML(i) + '<div class="bside"><p class="tkline">' + pn(tk.from) + ' 님 땅이에요. 땅값과 건물값의 <b>2배</b>를 주면 내 땅이 돼요.</p><dl class="offer"><dt>인수 값</dt><dd>' + won(tk.a) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - tk.a) + '</dd><dt>통행료</dt><dd>' + won(toll) + (t.k === 'city' && G.lv[i] ? ' · ' + WT.LV_NAME[G.lv[i]] : '') + '</dd></dl>' +
-      (t.k === 'city' ? '<p class="hint">가져오면 건물도 그대로 내 것, 바로 더 지을 수 있어요. 호텔은 인수할 수 없어요.</p>' : '<p class="hint">가져오면 다음부터 통행료를 내가 받아요.</p>') + '</div></div>' +
+    html = head + timer + '<div class="buyrow">' + deedHTML(i) + '<div class="bside"><p class="tkline">' + pn(tk.from) + ' 님 땅이에요. 땅값과 건물값의 <b>' + WT.takeoverRate(G, i) + '배</b>를 주면 내 땅이 돼요.</p><dl class="offer"><dt>인수 값</dt><dd>' + won(tk.a) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - tk.a) + '</dd><dt>통행료</dt><dd>' + won(toll) + (t.k === 'city' && G.lv[i] ? ' · ' + WT.LV_NAME[G.lv[i]] : '') + '</dd></dl>' +
+      (t.k === 'city' ? (G.lv[i] >= 4 ? '<p class="hint">호텔이 있는 땅이라 3배예요. 가져오면 호텔도 그대로 내 것이에요.</p>' : '<p class="hint">가져오면 건물도 그대로 내 것, 바로 더 지을 수 있어요. 호텔이 있는 땅은 3배예요.</p>') : '<p class="hint">가져오면 다음부터 통행료를 내가 받아요.</p>') + '</div></div>' +
       '<div class="row"><button class="btn red grow" id="dTake">인수하기 <small>' + won(tk.a) + '</small></button><button class="btn grow" id="dSkip">안 할래요</button></div>';
   } else if (G.phase === 'buy'){
     var n = WT.owned(G, G.turn).length;
@@ -2178,7 +2179,7 @@ function rulesBox(box, c, set, disabled){
   seg(box.querySelector('#rStart'), [[2000,'200만'],[2930,'293만 (원작)'],[5000,'500만']], c.start, function(v){ set('start', v); }, disabled);
   var sw = box.querySelector('#rSw');
   sw.appendChild(swRow('더블 세 번이면 무인도', '한 차례에 더블이 세 번 나오면 무인도로 가요', !!c.triple, function(){ set('triple', !c.triple); }, disabled));
-  sw.appendChild(swRow('땅 인수 (웃돈 2배)', '남의 땅에서 통행료를 낸 뒤, 땅값과 건물값의 2배를 주면 그 땅을 가져와요. 호텔은 못 가져가요', c.takeover !== false, function(){ set('takeover', c.takeover === false); }, disabled));
+  sw.appendChild(swRow('땅 인수 (웃돈 2배)', '남의 땅에서 통행료를 낸 뒤, 땅값과 건물값의 2배를 주면 그 땅을 가져와요. 호텔이 있는 땅은 3배', c.takeover !== false, function(){ set('takeover', c.takeover === false); }, disabled));
   sw.appendChild(swRow('산 차례에 바로 건물', '원작은 땅을 산 뒤 다시 왔을 때부터 지어요. 켜면 산 차례에도 지을 수 있어요', !!c.buildOnBuy, function(){ set('buildOnBuy', !c.buildOnBuy); }, disabled));
 }
 
@@ -2332,7 +2333,7 @@ function rulesSheet(){
     '<li>출발을 지나거나 멈추면 월급 20만 원.</li>' +
     '<li>주인 없는 도시·관광지·탈것에 서면 살 수 있어요. 남의 땅에 서면 통행료를 내요.</li>' +
     '<li>내 도시에 다시 서면 별장(2채까지) → 빌딩 → 호텔로 키울 수 있어요. 높을수록 통행료가 커져요. 제주도·부산·서울과 탈것에는 건물을 짓지 못해요.</li>' +
-    '<li>땅 인수(설정): 남의 땅에서 통행료를 낸 뒤 땅값과 건물값의 2배를 주인에게 주면 그 땅을 가져와요. 호텔은 못 가져가요.</li>' +
+    '<li>땅 인수(설정): 남의 땅에서 통행료를 낸 뒤 땅값과 건물값의 2배(호텔이 있는 땅은 3배)를 주인에게 주면 그 땅을 가져와요.</li>' +
     '<li>황금열쇠 칸에 서면 카드를 뽑아요. 무전기와 우대권은 갖고 있다가 써요.</li>' +
     '<li>무인도에 서면 세 번 갇혀요. 더블이 나오거나 무전기를 쓰면 나가요.</li>' +
     '<li>복지기금 내는 곳에서 15만 원을 내고, 받는 곳에 선 사람이 모인 돈을 다 가져가요.</li>' +
