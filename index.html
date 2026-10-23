@@ -23,6 +23,7 @@
   --ink:#16223a; --ink-soft:#5b6779; --air-red:#cf3239; --air-blue:#23489a; --gold:#d69e17; --gold-ink:#5a3d00;
   --s0:#e0703a; --s1:#22968a; --s2:#c08e00; --s3:#6b4fc4;
   --p0:#e5484d; --p1:#2563eb; --p2:#139a4a; --p3:#e58a00;
+  --card:#fffdf6; --edge:#b9c2cd; --edge-2:#8f9aa8;
   --ok:#1d8a52; --warn:#c2410c; --panel:#ffffff; --panel-line:#d6dde5; --veil:rgba(14,22,38,.45);
   --shadow:0 1px 0 rgba(20,34,58,.08), 0 10px 26px rgba(20,34,58,.14);
   --f-display:"Black Han Sans","Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
@@ -34,6 +35,7 @@
   --ink:#e8eef6; --ink-soft:#9fb0c6; --air-red:#e0525a; --air-blue:#5b84d6; --gold:#e8b43a; --gold-ink:#3a2700;
   --s0:#f08a57; --s1:#3fb6a8; --s2:#d8a91c; --s3:#9a82ec;
   --p0:#ff6b70; --p1:#5b93ff; --p2:#2fc46c; --p3:#ffa62b;
+  --card:#f4f1e6; --edge:#26354d; --edge-2:#141f31;
   --ok:#3fbf7f; --warn:#fb8a4c; --panel:#18233a; --panel-line:#2c3c55; --veil:rgba(0,0,0,.6);
   --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.45);
   color-scheme:dark}}
@@ -42,6 +44,7 @@
   --ink:#e8eef6; --ink-soft:#9fb0c6; --air-red:#e0525a; --air-blue:#5b84d6; --gold:#e8b43a; --gold-ink:#3a2700;
   --s0:#f08a57; --s1:#3fb6a8; --s2:#d8a91c; --s3:#9a82ec;
   --p0:#ff6b70; --p1:#5b93ff; --p2:#2fc46c; --p3:#ffa62b;
+  --card:#f4f1e6; --edge:#26354d; --edge-2:#141f31;
   --ok:#3fbf7f; --warn:#fb8a4c; --panel:#18233a; --panel-line:#2c3c55; --veil:rgba(0,0,0,.6);
   --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.45);
   color-scheme:dark}
@@ -85,14 +88,23 @@ button:disabled{cursor:default; opacity:.45}
 .pp .say{position:absolute; right:6px; top:4px; background:var(--ink); color:var(--paper); font-size:11px; padding:2px 7px; border-radius:9px; max-width:70%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .pp .bar{position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--c); transform-origin:left; opacity:.8}
 
-/* 판 */
+/* 판 — 탁자 위에 비스듬히 놓인 판. 말·건물·주사위는 판 위에 서 있음. 메뉴에서 '위에서 보기'로 평평하게 */
 .boardwrap{grid-area:board; justify-self:center; width:min(100%, 760px); min-width:0}
-@media (min-width:920px){ .boardwrap{width:min(100%, calc(100vh - 90px), 820px); justify-self:stretch} }
-.envelope{padding:7px; border-radius:14px; box-shadow:var(--shadow);
+@media (min-width:920px){ .boardwrap{width:min(100%, calc(100vh - 175px), 760px); justify-self:center; align-self:start; margin-top:8px} }
+.stage{--tilt:26deg; perspective:1600px; perspective-origin:50% 20%; position:relative; padding-bottom:3%}
+@media (min-width:920px){ .stage{--tilt:30deg} }
+.stage.flat{--tilt:0deg; padding-bottom:0}
+.stage::before{content:""; position:absolute; left:6%; right:6%; bottom:0; height:12%; border-radius:50%; background:radial-gradient(closest-side, rgba(10,20,40,.35), transparent); pointer-events:none}
+.stage.flat::before{display:none}
+.envelope{position:relative; padding:7px; border-radius:14px; transform-style:preserve-3d; transform-origin:50% 55%; transform:rotateX(var(--tilt)); transition:transform .6s cubic-bezier(.3,.8,.3,1);
   background:repeating-linear-gradient(-45deg, var(--air-red) 0 12px, var(--paper) 12px 20px, var(--air-blue) 20px 32px, var(--paper) 32px 40px)}
-.board{position:relative; aspect-ratio:1; max-width:100%; background:var(--paper); border-radius:8px; display:grid;
-  grid-template-columns:1.45fr repeat(9, 1fr) 1.45fr; grid-template-rows:1.45fr repeat(9, 1fr) 1.45fr; overflow:hidden}
+.envelope::after{content:""; position:absolute; left:4px; right:4px; top:100%; height:14px; background:linear-gradient(var(--edge), var(--edge-2)); transform-origin:50% 0; transform:rotateX(-90deg); border-radius:0 0 6px 6px}
+.stage.flat .envelope::after{display:none}
+.envelope::before{content:""; position:absolute; inset:0; border-radius:14px; transform:translateZ(-14px); background:var(--edge-2); box-shadow:0 20px 40px rgba(10,20,40,.35)}
+.board{position:relative; aspect-ratio:1; max-width:100%; background:var(--paper); border-radius:8px; display:grid; transform-style:preserve-3d;
+  grid-template-columns:1.45fr repeat(9, 1fr) 1.45fr; grid-template-rows:1.45fr repeat(9, 1fr) 1.45fr}
 .tile{position:relative; border:.5px solid var(--line); margin:-.25px; background:var(--paper); padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; overflow:hidden; min-width:0; min-height:0; line-height:1.05; font-size:clamp(7.5px, 1.6vw, 12.5px)}
+.tile[data-i="20"]{border-top-left-radius:8px} .tile[data-i="30"]{border-top-right-radius:8px} .tile[data-i="10"]{border-bottom-left-radius:8px} .tile[data-i="0"]{border-bottom-right-radius:8px}
 .tile .band{position:absolute; background:var(--sc)}
 .tile.b-top .band{left:0; right:0; top:0; height:18%}
 .tile.b-bottom .band{left:0; right:0; bottom:0; height:18%}
@@ -101,16 +113,9 @@ button:disabled{cursor:default; opacity:.45}
 .tile .tn{font-weight:800; word-break:keep-all; overflow-wrap:anywhere; padding:0 2px; position:relative; z-index:1}
 .tile .tp{font-family:var(--f-num); font-size:.82em; color:var(--ink-soft); margin-top:2px; position:relative; z-index:1}
 .tile.b-top{padding-top:12%} .tile.b-bottom{padding-bottom:12%} .tile.b-left{padding-left:14%} .tile.b-right{padding-right:14%}
-.tile.owned{background:color-mix(in srgb, var(--oc) 16%, var(--paper))}
+.tile.owned{background:color-mix(in srgb, var(--oc) 18%, var(--paper))}
 .tile.owned .tp{color:var(--oc); font-weight:600}
-.tile .own{position:absolute; width:15%; aspect-ratio:1; border-radius:50%; background:var(--oc); z-index:2; box-shadow:0 0 0 1.5px var(--paper)}
-.tile.b-top .own{right:3%; bottom:3%} .tile.b-bottom .own{right:3%; top:3%} .tile.b-left .own{right:3%; bottom:5%} .tile.b-right .own{left:3%; bottom:5%}
-.tile .bld{position:absolute; display:flex; gap:1px; z-index:2; align-items:flex-end}
-.tile.b-top .bld{left:0; right:0; top:1%; height:16%; justify-content:center}
-.tile.b-bottom .bld{left:0; right:0; bottom:1%; height:16%; justify-content:center}
-.tile.b-left .bld{top:0; bottom:0; left:1%; width:16%; flex-direction:column; justify-content:center; align-items:center}
-.tile.b-right .bld{top:0; bottom:0; right:1%; width:16%; flex-direction:column; justify-content:center; align-items:center}
-.tile .bld svg{width:clamp(6px,1.5vw,12px); height:clamp(6px,1.5vw,12px); fill:var(--paper); stroke:var(--ink); stroke-width:1.4}
+.tile.owned .band{box-shadow:inset 0 0 0 2px var(--oc)}
 .tile.corner{font-size:clamp(8px, 1.8vw, 14px)}
 .tile.corner svg.ic{width:46%; height:46%; stroke:var(--ink); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
 .tile svg.ic{width:52%; height:42%; stroke:var(--ink); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; position:relative; z-index:1}
@@ -123,45 +128,106 @@ button:disabled{cursor:default; opacity:.45}
 .tile.sel{outline:3px solid var(--ok); outline-offset:-3px; z-index:3}
 .tile.flash{animation:flash .7s ease-out}
 @keyframes flash{0%{box-shadow:inset 0 0 0 40px color-mix(in srgb, var(--gold) 70%, transparent)}100%{box-shadow:inset 0 0 0 0 transparent}}
-.tile.here{box-shadow:inset 0 0 0 2px var(--hc)}
 .tile:focus-visible{z-index:4}
 
-.center{grid-row:2/11; grid-column:2/11; position:relative; display:grid; place-items:center; padding:4%; box-sizing:border-box; min-width:0; min-height:0;
+.center{grid-row:2/11; grid-column:2/11; position:relative; min-width:0; min-height:0;
   background:radial-gradient(color-mix(in srgb, var(--air-blue) 14%, transparent) 1px, transparent 1.2px) 0 0/10px 10px}
-.cin{display:grid; justify-items:center; gap:clamp(4px,1.4vw,12px); width:100%; text-align:center}
-.mark{font-family:var(--f-display); font-size:clamp(18px, 5vw, 40px); color:color-mix(in srgb, var(--air-blue) 70%, var(--paper)); letter-spacing:.02em; line-height:1}
+.mark{position:absolute; left:0; right:0; top:9%; text-align:center; font-family:var(--f-display); font-size:clamp(18px, 5vw, 40px); color:color-mix(in srgb, var(--air-blue) 60%, var(--paper)); letter-spacing:.02em; line-height:1}
 .mark small{display:block; font-family:var(--f-num); font-size:.32em; letter-spacing:.3em; margin-top:4px; color:var(--ink-soft)}
-.dice{display:flex; gap:clamp(6px,2vw,14px)}
-.die{width:clamp(34px, 9vw, 64px); aspect-ratio:1; border-radius:22%; background:var(--panel); border:1.5px solid var(--ink); box-shadow:0 3px 0 var(--ink); display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); padding:14%; box-sizing:border-box}
-.die i{width:70%; aspect-ratio:1; border-radius:50%; background:var(--ink); place-self:center; visibility:hidden}
-.die.dbl{border-color:var(--air-red); box-shadow:0 3px 0 var(--air-red)}
-.die.dbl i{background:var(--air-red)}
-.die.shake{animation:shake .12s linear infinite}
-@keyframes shake{0%{transform:rotate(-8deg) translateY(-2px)}50%{transform:rotate(8deg) translateY(1px)}100%{transform:rotate(-8deg) translateY(-2px)}}
-.news{word-break:keep-all; font-weight:700; font-size:clamp(12px, 2.6vw, 16px); min-height:2.6em; max-width:92%; text-wrap:balance; line-height:1.3}
+.news{position:absolute; left:6%; right:6%; top:61%; text-align:center; word-break:keep-all; font-weight:700; font-size:clamp(12px, 2.6vw, 16px); text-wrap:balance; line-height:1.3}
 .news b{color:var(--nc, var(--ink))}
-.facts{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; font-size:clamp(10px,2vw,12.5px); color:var(--ink-soft)}
+.facts{position:absolute; left:0; right:0; top:80%; display:flex; gap:6px; flex-wrap:wrap; justify-content:center; font-size:clamp(10px,2vw,12.5px); color:var(--ink-soft)}
 .facts span{background:var(--panel); border:1px solid var(--panel-line); border-radius:8px; padding:2px 7px; white-space:nowrap}
 .facts b{font-family:var(--f-num); color:var(--ink)}
 
+/* 주사위 — 정육면체, 판 위로 던져져 굴러가다 멈춤 */
+.dicezone{position:absolute; inset:0; pointer-events:none; transform-style:preserve-3d; z-index:6}
+.dsh{position:absolute; width:var(--ds); height:var(--ds); margin:calc(var(--ds) / -2) 0 0 calc(var(--ds) / -2); border-radius:30%; background:radial-gradient(closest-side, rgba(10,20,40,.45), transparent); transform:translateZ(1px) scale(1.15)}
+.dpos{position:absolute; width:var(--ds); height:var(--ds); margin:calc(var(--ds) / -2) 0 0 calc(var(--ds) / -2); transform-style:preserve-3d; transform:translateZ(calc(var(--ds) / 2))}
+.cube{position:absolute; inset:0; transform-style:preserve-3d}
+.cube .f{position:absolute; inset:0; border-radius:18%; background:radial-gradient(circle at 30% 25%, #fff, #eceef2 70%); box-shadow:inset 0 0 0 1px rgba(20,34,58,.25), inset 0 -4px 8px rgba(20,34,58,.12); display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); padding:15%; box-sizing:border-box; backface-visibility:hidden}
+.cube .f i{width:72%; aspect-ratio:1; border-radius:50%; background:#1b2436; place-self:center; box-shadow:inset 0 1px 1px rgba(0,0,0,.5)}
+.cube .f.one i{width:90%; background:var(--air-red)}
+.cube .f1{transform:translateZ(calc(var(--ds) / 2))}
+.cube .f6{transform:rotateY(180deg) translateZ(calc(var(--ds) / 2))}
+.cube .f3{transform:rotateY(90deg) translateZ(calc(var(--ds) / 2))}
+.cube .f4{transform:rotateY(-90deg) translateZ(calc(var(--ds) / 2))}
+.cube .f2{transform:rotateX(90deg) translateZ(calc(var(--ds) / 2))}
+.cube .f5{transform:rotateX(-90deg) translateZ(calc(var(--ds) / 2))}
+.dpos.dbl .f{box-shadow:inset 0 0 0 2px var(--air-red), inset 0 -4px 8px rgba(20,34,58,.12)}
+
 /* 황금열쇠 카드 */
-.keycard{position:absolute; inset:12% 14%; display:grid; place-items:center; z-index:6; pointer-events:auto}
-.keycard .kc{width:min(100%, 280px); background:linear-gradient(160deg, color-mix(in srgb, var(--gold) 82%, #fff), var(--gold)); color:var(--gold-ink); border-radius:14px; padding:14px 16px; box-shadow:0 14px 34px rgba(0,0,0,.3); text-align:center; display:grid; gap:6px; animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+.keycard{position:fixed; inset:0; display:grid; place-items:center; z-index:60; pointer-events:auto; padding:0 24px}
+.keycard .kc{width:min(100%, 280px); background:linear-gradient(160deg, color-mix(in srgb, var(--gold) 82%, #fff), var(--gold)); color:var(--gold-ink); border-radius:14px; padding:14px 16px; box-shadow:0 14px 34px rgba(0,0,0,.3); text-align:center; display:grid; gap:6px; animation:cardin .45s cubic-bezier(.2,1.4,.4,1)}
 .keycard .kc small{font-family:var(--f-num); font-size:11px; letter-spacing:.2em}
 .keycard .kc h3{margin:0; font-family:var(--f-display); font-size:clamp(20px, 5vw, 28px); font-weight:400}
 .keycard .kc p{margin:0; font-size:13.5px; line-height:1.45; font-weight:600}
-@keyframes cardin{from{transform:rotateY(80deg) scale(.7); opacity:0} to{transform:none; opacity:1}}
+@keyframes cardin{from{transform:translateY(60%) rotateX(70deg) scale(.6); opacity:0} to{transform:none; opacity:1}}
 
-/* 말 */
-.toks{position:absolute; inset:0; pointer-events:none; z-index:5}
-.tk{position:absolute; width:4.2%; aspect-ratio:1; border-radius:50% 50% 50% 0; transform:translate(-50%,-100%) rotate(-45deg); background:var(--c); box-shadow:0 0 0 2px var(--paper), 0 3px 6px rgba(0,0,0,.35); transition:left .11s linear, top .11s linear}
-.tk::after{content:""; position:absolute; inset:28%; border-radius:50%; background:var(--paper)}
-.tk.fly{transition:left .7s cubic-bezier(.45,0,.3,1), top .7s cubic-bezier(.45,0,.3,1)}
-.tk.on{z-index:2; animation:bob 1s ease-in-out infinite}
-@keyframes bob{50%{margin-top:-4px}}
+/* 말과 건물 — 판 위에 서 있는 그림 (판이 기운 만큼 거꾸로 세움) */
+.toks,.blds{position:absolute; inset:0; pointer-events:none; transform-style:preserve-3d; z-index:5}
+.tk{position:absolute; width:4.6%; height:4.6%; transform:translate(-50%,-50%); transform-style:preserve-3d; transition:left .11s linear, top .11s linear}
+.tk .sh{position:absolute; inset:8% 0; border-radius:50%; background:radial-gradient(closest-side, rgba(10,20,40,.5), transparent)}
+.tk .pawn{position:absolute; left:4%; right:4%; bottom:50%; height:210%; transform-origin:50% 100%; transform:rotateX(calc(-1 * var(--tilt))); transform-style:preserve-3d}
+.tk .pawn svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+.tk.hop .pawn svg{animation:hop .12s ease-out}
+@keyframes hop{50%{transform:translateY(-22%)}}
+.tk.fly{transition:left .75s cubic-bezier(.45,0,.3,1), top .75s cubic-bezier(.45,0,.3,1)}
+.tk.fly .pawn svg{animation:flyup .75s ease-in-out}
+@keyframes flyup{50%{transform:translateY(-120%) scale(1.15)}}
+.tk.on .pawn svg{animation:bob 1.1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-10%)}}
+.bl{position:absolute; width:5%; height:5%; transform:translate(-50%,-50%); transform-style:preserve-3d}
+.bl .st{position:absolute; left:-20%; right:-20%; bottom:50%; height:150%; transform-origin:50% 100%; transform:rotateX(calc(-1 * var(--tilt)))}
+.bl svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+.bl.pop .st{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:rotateX(calc(-1 * var(--tilt))) scale(0)}}
 .fl{position:absolute; z-index:9; font-family:var(--f-num); font-weight:600; font-size:13px; padding:1px 6px; border-radius:8px; pointer-events:none; white-space:nowrap; animation:floatup 1.3s ease-out forwards}
 .fl.plus{background:var(--ok); color:#fff} .fl.minus{background:var(--air-red); color:#fff}
 @keyframes floatup{from{transform:translate(-50%,0); opacity:1} to{transform:translate(-50%,-26px); opacity:0}}
+
+/* 땅 문서 카드 — 산 땅은 카드로 모음 */
+.deed{--fs:10px; font-size:var(--fs); width:13em; aspect-ratio:5/7; box-sizing:border-box; background:var(--card); color:#1b2436; border-radius:.9em; padding:.7em; display:flex; flex-direction:column; gap:.35em; position:relative; overflow:hidden;
+  box-shadow:0 .2em 0 rgba(20,34,58,.18), 0 .6em 1.4em rgba(20,34,58,.22); text-align:left}
+.deed .hd{background:var(--sc); color:#fff; border-radius:.5em; padding:.55em .6em .5em; display:grid; gap:.1em; position:relative}
+.deed .hd small{font-size:.78em; font-weight:700; opacity:.92; letter-spacing:.02em; padding-right:3.2em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff}
+.deed .hd b{font-family:var(--f-display); font-weight:400; font-size:1.75em; line-height:1.05; word-break:keep-all}
+.deed .hd .code{position:absolute; right:.55em; top:.45em; font-family:var(--f-num); font-weight:600; font-size:.85em; letter-spacing:.08em; opacity:.85}
+.deed .ic{width:2.6em; height:2.6em; stroke:#fff; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; position:absolute; right:.4em; bottom:.3em; opacity:.9}
+.deed .price{display:flex; justify-content:space-between; font-weight:800; font-size:1.05em; padding:0 .15em}
+.deed .price span:last-child{font-family:var(--f-num)}
+.deed table{width:100%; border-collapse:collapse; font-size:.92em}
+.deed td{padding:.18em .15em; border-bottom:1px dashed rgba(27,36,54,.2); color:#1b2436}
+.deed td:last-child{text-align:right; font-family:var(--f-num); font-weight:600}
+.deed tr.now td{color:var(--sc); font-weight:800}
+.deed .ft{margin-top:auto; font-size:.78em; color:#5b6779; line-height:1.35}
+.deed .stamp{position:absolute; right:.6em; bottom:2.6em; width:5.2em; height:5.2em; border-radius:50%; border:.28em double var(--oc); color:var(--oc); display:grid; place-items:center; text-align:center; font-weight:800; font-size:.9em; line-height:1.1; transform:rotate(-14deg); opacity:.88; background:color-mix(in srgb, var(--oc) 8%, transparent); padding:.3em; box-sizing:border-box; word-break:keep-all}
+.deed.big{--fs:15px}
+.deed.mini{--fs:8.4px}
+.deed.ghost{background:var(--paper-2); box-shadow:none; border:1.5px dashed var(--line); color:var(--ink-soft)}
+.deed.ghost > *{visibility:hidden}
+.deed.ghost::after{content:attr(data-name); position:absolute; inset:0; display:grid; place-items:center; font-weight:800; font-size:1.2em; color:var(--ink-soft); text-align:center; padding:1em; word-break:keep-all}
+.deed.taken{filter:grayscale(.85); opacity:.55}
+.cardfx{position:fixed; z-index:60; left:50%; top:46%; pointer-events:none; perspective:900px}
+.cardfx .deed{--fs:clamp(11px, 3.6vw, 15px); transform-style:preserve-3d}
+.mini-cards{display:flex; align-items:flex-end; height:14px; padding-left:3px}
+.mini-cards i{width:8px; height:12px; border-radius:2px; background:var(--sc); margin-left:-3px; box-shadow:0 0 0 1px var(--panel); transform:rotate(var(--r))}
+.mini-cards span{font-family:var(--f-num); font-size:10.5px; color:var(--ink-soft); margin-left:4px}
+.pp.bump{animation:bump .45s ease-out}
+@keyframes bump{40%{transform:translateY(-3px) scale(1.06)}}
+.album{display:grid; grid-template-columns:repeat(auto-fill, minmax(112px, 1fr)); gap:10px; justify-items:center}
+.album .slot{display:grid; gap:4px; justify-items:center}
+.album .slot .btn{min-height:34px; padding:4px 8px; font-size:12px}
+.album .slot .cap{font-size:11px; color:var(--ink-soft); text-align:center}
+.prog{display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px}
+.prog span{font-size:12px; padding:3px 8px; border-radius:8px; background:var(--paper-2); white-space:nowrap}
+.prog span b{font-family:var(--f-num)}
+.ptabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px}
+.ptabs button{border:1px solid var(--panel-line); background:var(--paper-2); border-radius:10px; padding:7px 10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px}
+.ptabs button i{width:10px; height:10px; border-radius:50%; background:var(--c)}
+.ptabs button.on{box-shadow:0 0 0 2px var(--c)}
+.buyrow{display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px; align-items:center}
+.buyrow .deed{--fs:8.6px}
 
 /* 할 일 */
 .act{grid-area:act; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:12px; display:grid; gap:10px; box-shadow:var(--shadow); min-width:0}
@@ -269,15 +335,16 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
     <button class="iconbtn" id="bMenu" aria-label="메뉴"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </div>
   <div class="ppl" id="ppl"></div>
-  <div class="boardwrap"><div class="envelope"><div class="board" id="board">
-    <div class="center" id="center"><div class="cin">
+  <div class="boardwrap"><div class="stage" id="stage"><div class="envelope"><div class="board" id="board">
+    <div class="center" id="center">
       <div class="mark" id="mark">한판 세계여행<small>PAR AVION</small></div>
-      <div class="dice" id="dice"><div class="die" id="d0"></div><div class="die" id="d1"></div></div>
       <div class="news" id="news"></div>
       <div class="facts" id="facts"></div>
-    </div></div>
+    </div>
+    <div class="blds" id="blds"></div>
     <div class="toks" id="toks"></div>
-  </div></div></div>
+    <div class="dicezone" id="dicezone"></div>
+  </div></div></div></div>
   <div class="act" id="act"></div>
   <div class="log" id="log"><h3>여행 기록</h3><ol id="logl"></ol></div>
 </div>
@@ -1046,11 +1113,6 @@ var ICONS = {
   PUS:'<path d="M3 16c3-2 6-2 9 0s6 2 9 0"/><path d="M6 13V7l4-3 4 3v6"/><path d="M10 13V9"/>',
   SEL:'<path d="M12 3v4M9 7h6l1 3H8z"/><path d="M10 10v8M14 10v8M7 21h10M8 18h8"/>'
 };
-var BLD = {
-  villa:'<svg viewBox="0 0 12 12"><path d="M2 6l4-4 4 4v5H2z"/></svg>',
-  bldg:'<svg viewBox="0 0 12 12"><path d="M3 1h6v10H3z"/><path d="M5 3h2M5 6h2"/></svg>',
-  hotel:'<svg viewBox="0 0 12 12"><path d="M1 3h10v8H1z"/><path d="M3 1h6v2"/><path d="M5 11V7h2v4"/></svg>'
-};
 var tileEls = [];
 function drawBoard(){
   var bd = $('board');
@@ -1067,7 +1129,7 @@ function drawBoard(){
     if (t.k === 'city'){
       d.classList.add(bandSide(i));
       d.style.setProperty('--sc', 'var(--s' + WT.sideOf(i) + ')');
-      html = '<span class="band"></span><span class="tn">' + esc(name) + '</span><span class="tp"></span><span class="bld"></span>';
+      html = '<span class="band"></span><span class="tn">' + esc(name) + '</span><span class="tp"></span>';
     } else if (t.k === 'spot' || t.k === 'ride'){
       d.classList.add(bandSide(i));
       html = '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.en] || '') + '</svg><span class="tn">' + esc(name) + '</span><span class="tp"></span>';
@@ -1101,14 +1163,9 @@ function renderTiles(){
     var ownEl = d.querySelector('.own');
     if (o >= 0 && !ownEl){ ownEl = document.createElement('span'); ownEl.className = 'own'; d.appendChild(ownEl); }
     if (o < 0 && ownEl) ownEl.remove();
-    var b = d.querySelector('.bld');
-    if (b){
-      var h = '';
-      if (lv === 1) h = BLD.villa; else if (lv === 2) h = BLD.villa + BLD.villa; else if (lv === 3) h = BLD.bldg; else if (lv === 4) h = BLD.hotel;
-      if (b.innerHTML !== h) b.innerHTML = h;
-    }
     d.setAttribute('aria-label', t.n + (o >= 0 ? ', ' + G.players[o].name + ' 땅, ' + WT.LV_NAME[lv] + ', 통행료 ' + won(WT.tollOf(G, i)) : ', ' + won(t.p)));
   }
+  renderBlds();
   var picking = G && G.phase === 'space' && myTurn() && !busy;
   tileEls.forEach(function(d, i){
     d.classList.toggle('pick', picking && i !== WT.SPACE);
@@ -1116,25 +1173,43 @@ function renderTiles(){
   });
 }
 
-// 말 자리 (판 기준 %)
+// 칸 자리 (판 기준 %)
+var COLW = [1.45, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.45], TOT = 11.9;
+function tileRect(i){
+  var c = cellOf(i), x = 0, y = 0;
+  for (var j = 0; j < c[1]; j++) x += COLW[j];
+  for (j = 0; j < c[0]; j++) y += COLW[j];
+  return [x / TOT * 100, y / TOT * 100, COLW[c[1]] / TOT * 100, COLW[c[0]] / TOT * 100];
+}
 function tokPos(i, k, cnt){
-  var c = cellOf(i);
-  var colW = [1.45].concat(Array(9).fill(1)).concat([1.45]), tot = 11.9;
-  function at(arr, idx){ var s = 0; for (var j = 0; j < idx; j++) s += arr[j]; return (s + arr[idx] / 2) / tot * 100; }
-  var x = at(colW, c[1]), y = at(colW, c[0]);
-  var off = [[-1.6, -0.6], [1.6, -0.6], [-1.6, 2.4], [1.6, 2.4]];
-  if (cnt > 1){ x += off[k][0]; y += off[k][1]; } else y += 1.2;
+  var r = tileRect(i), x = r[0] + r[2] / 2, y = r[1] + r[3] / 2;
+  var off = [[-1.7, -0.9], [1.7, -0.9], [-1.7, 1.9], [1.7, 1.9]];
+  if (cnt > 1){ x += off[k][0]; y += off[k][1]; } else y += 0.6;
   return [x, y];
 }
+function bandPos(i){ // 건물이 설 자리 = 띠 위
+  var r = tileRect(i), b = bandSide(i);
+  if (b === 'b-top') return [r[0] + r[2] / 2, r[1] + r[3] * 0.12];
+  if (b === 'b-bottom') return [r[0] + r[2] / 2, r[1] + r[3] * 0.88];
+  if (b === 'b-left') return [r[0] + r[2] * 0.12, r[1] + r[3] / 2];
+  return [r[0] + r[2] * 0.88, r[1] + r[3] / 2];
+}
+var PAWN = '<svg viewBox="0 0 20 40" aria-hidden="true"><ellipse cx="10" cy="36.5" rx="8.6" ry="3" style="fill:var(--c)"/><ellipse cx="10" cy="36" rx="8.6" ry="3" fill="rgba(0,0,0,.25)"/><ellipse cx="10" cy="35" rx="8.2" ry="2.6" style="fill:var(--c)"/>' +
+  '<path d="M4.4 35c1.1-6.3 3.3-10.6 3.6-16.2h4c.3 5.6 2.5 9.9 3.6 16.2z" style="fill:var(--c)" stroke="rgba(0,0,0,.3)" stroke-width=".6"/>' +
+  '<ellipse cx="10" cy="18.6" rx="5.4" ry="1.7" style="fill:var(--c)" stroke="rgba(0,0,0,.3)" stroke-width=".6"/>' +
+  '<circle cx="10" cy="11" r="6.4" style="fill:var(--c)" stroke="rgba(0,0,0,.3)" stroke-width=".6"/>' +
+  '<path d="M7.6 21.5c-.5 4.6-1.6 8.6-2.4 12" stroke="#fff" stroke-opacity=".5" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="7.9" cy="8.7" r="2" fill="#fff" fill-opacity=".6"/></svg>';
 var tokEls = [];
 function buildToks(){
   $('toks').innerHTML = ''; tokEls = [];
   G.players.forEach(function(p, i){
     var e = document.createElement('div'); e.className = 'tk'; e.style.setProperty('--c', pc(i));
+    e.innerHTML = '<span class="sh"></span><span class="pawn">' + PAWN + '</span>';
     $('toks').appendChild(e); tokEls.push(e);
   });
   DP = G.players.map(function(p){ return p.pos; });
   placeToks();
+  BL = {}; $('blds').innerHTML = '';
 }
 function placeToks(){
   var groups = {};
@@ -1145,9 +1220,71 @@ function placeToks(){
     if (p.out) return;
     var g = groups[DP[i]], k = g.indexOf(i), xy = tokPos(DP[i], k, g.length);
     e.style.left = xy[0] + '%'; e.style.top = xy[1] + '%';
-    e.classList.toggle('on', G.phase !== 'over' && G.turn === i);
+    e.style.zIndex = Math.round(xy[1] * 10);
+    e.classList.toggle('on', G.phase !== 'over' && G.turn === i && !busy);
   });
 }
+// 건물: 별장 1·2채, 빌딩, 호텔 — 지붕은 주인 색
+function bldSvg(lv){
+  var wall = 'fill="#fffdf6" stroke="#1b2436" stroke-width="1"', roof = 'style="fill:var(--oc)" stroke="#1b2436" stroke-width="1"';
+  var house = function(x, w){ return '<path d="M' + x + ' 34V22h' + w + 'v12z" ' + wall + '/><path d="M' + (x - 1.5) + ' 22l' + (w / 2 + 1.5) + '-8 ' + (w / 2 + 1.5) + ' 8z" ' + roof + '/><rect x="' + (x + w / 2 - 1.6) + '" y="28" width="3.2" height="6" fill="#1b2436"/>'; };
+  var g = '';
+  if (lv === 1) g = house(9, 12);
+  else if (lv === 2) g = house(2, 11) + house(17, 11);
+  else if (lv === 3) g = '<path d="M9 34V7h12v27z" ' + wall + '/><path d="M9 7h12V3H9z" ' + roof + '/>' + [11, 16, 21, 26].map(function(y){ return '<rect x="11.5" y="' + y + '" width="2.6" height="2.6" fill="#1b2436"/><rect x="16" y="' + y + '" width="2.6" height="2.6" fill="#1b2436"/>'; }).join('');
+  else if (lv === 4) g = '<path d="M3 34V10h24v24z" ' + wall + '/><path d="M2 10l13-7 13 7z" ' + roof + '/><text x="15" y="23" text-anchor="middle" font-size="10" font-weight="800" fill="#1b2436" font-family="sans-serif">H</text><path d="M12 34v-6h6v6" fill="#1b2436"/>';
+  return '<svg viewBox="0 0 30 36" aria-hidden="true"><ellipse cx="15" cy="34.5" rx="14" ry="2.4" fill="rgba(10,20,40,.3)"/>' + g + '</svg>';
+}
+var BL = {};
+function renderBlds(){
+  if (!G) return;
+  var box = $('blds');
+  for (var i = 0; i < N; i++){
+    var lv = T[i].k === 'city' && G.own[i] >= 0 ? G.lv[i] : 0, key = lv ? lv + ':' + G.own[i] : '';
+    var cur = BL[i];
+    if ((cur ? cur.k : '') === key) continue;
+    if (cur){ cur.el.remove(); delete BL[i]; }
+    if (!lv) continue;
+    var e = document.createElement('div'), xy = bandPos(i);
+    e.className = 'bl' + (G.phase !== 'over' ? ' pop' : '');
+    e.style.left = xy[0] + '%'; e.style.top = xy[1] + '%'; e.style.zIndex = Math.round(xy[1] * 10);
+    e.style.setProperty('--oc', pc(G.own[i]));
+    e.innerHTML = '<span class="st">' + bldSvg(lv) + '</span>';
+    box.appendChild(e);
+    BL[i] = { k:key, el:e };
+  }
+}
+
+// ── 주사위 ──
+var FACE_PIPS = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
+var FACE_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] }; // 그 눈이 위로 오게 [X, Y]
+var REST = [[43.5, 47], [56.5, 47.5]];
+var diceZ = [0, 0];
+function buildDice(){
+  var z = $('dicezone'), h = '';
+  for (var k = 0; k < 2; k++){
+    h += '<div class="dsh" id="ds' + k + '" style="left:' + REST[k][0] + '%;top:' + REST[k][1] + '%"></div><div class="dpos" id="dp' + k + '" style="left:' + REST[k][0] + '%;top:' + REST[k][1] + '%"><div class="cube" id="cb' + k + '">';
+    for (var v = 1; v <= 6; v++){
+      h += '<div class="f f' + v + (v === 1 ? ' one' : '') + '">';
+      for (var j = 0; j < 9; j++) h += FACE_PIPS[v].indexOf(j) >= 0 ? '<i style="grid-area:' + (Math.floor(j / 3) + 1) + '/' + (j % 3 + 1) + '"></i>' : '';
+      h += '</div>';
+    }
+    h += '</div></div>';
+  }
+  z.innerHTML = h;
+  sizeDice();
+}
+function sizeDice(){ var b = $('board'); b.style.setProperty('--ds', Math.max(22, Math.round(b.clientWidth * 0.085)) + 'px'); }
+function cubeRot(v, zr, spinX, spinY){ var r = FACE_ROT[v]; return 'rotateZ(' + zr + 'deg) rotateX(' + (r[0] + (spinX || 0) * 360) + 'deg) rotateY(' + (r[1] + (spinY || 0) * 360) + 'deg)'; }
+function showDice(d){
+  if (!$('cb0')) buildDice();
+  [0, 1].forEach(function(k){
+    var v = d ? d[k] : [5, 2][k];
+    $('cb' + k).style.transform = cubeRot(v, diceZ[k]);
+    $('dp' + k).classList.toggle('dbl', !!(d && d[0] === d[1]));
+  });
+}
+function ds(){ return parseFloat(getComputedStyle($('board')).getPropertyValue('--ds')) || 40; }
 
 // ── 사람/차례 ──
 function isAway(i){ var R = NET.room; return !!(R && R.seats[i] && R.seats[i].away); }
@@ -1162,6 +1299,7 @@ function myTurn(){
 function renderPeople(){
   var box = $('ppl'); box.style.setProperty('--n', G.players.length);
   var R = NET.room, sayOn = MODE === 'online' && R && R.say && Date.now() < (NET.sayUntil || 0);
+  box.onclick = function(ev){ var pp = ev.target.closest('.pp'); if (pp && !busy) albumSheet(+pp.id.slice(2)); };
   box.innerHTML = G.players.map(function(p, i){
     var tags = [];
     if (p.isl > 0) tags.push('<span class="tag">무인도 ' + p.isl + '</span>');
@@ -1183,10 +1321,16 @@ function renderPeople(){
     if (MODE === 'online' && R && R.deadline && G.turn === i && G.phase !== 'over') bar = '<span class="bar" id="tbar"></span>';
     return '<div class="pp' + (G.turn === i && G.phase !== 'over' ? ' on' : '') + (p.out ? ' out' : '') + '" style="--c:' + pc(i) + '" id="pp' + i + '">' +
       '<span class="nm"><span class="tok"></span><span style="overflow:hidden;text-overflow:ellipsis">' + esc(p.name) + '</span>' + (sub ? '<i>' + sub + '</i>' : '') + '</span>' +
-      '<span class="money">' + won(p.money) + '</span><span class="tags">' + tags.join('') + '</span>' + say + bar + '</div>';
+      '<span class="money">' + won(p.money) + '</span>' + miniCards(i) + '<span class="tags">' + tags.join('') + '</span>' + say + bar + '</div>';
   }).join('');
 }
 
+function miniCards(pi){
+  var own = WT.owned(G, pi);
+  if (!own.length) return '<span class="mini-cards"><span style="margin-left:0">카드 0장</span></span>';
+  var show = own.slice(-9);
+  return '<span class="mini-cards">' + show.map(function(i, k){ return '<i style="--sc:' + deedColor(i) + ';--r:' + ((k - show.length / 2) * 4) + 'deg"></i>'; }).join('') + '<span>' + own.length + '장</span></span>';
+}
 function renderFacts(){
   var f = [];
   f.push('<span>' + G.round + (G.cfg.rounds ? ' / ' + G.cfg.rounds : '') + '바퀴째</span>');
@@ -1196,13 +1340,57 @@ function renderFacts(){
 }
 function setNews(html, color){ var n = $('news'); n.innerHTML = html; n.style.setProperty('--nc', color || 'var(--ink)'); }
 
-function showDice(d, dbl){
-  [0, 1].forEach(function(k){
-    var el = $('d' + k), v = d ? d[k] : 0;
-    if (!el.firstChild) el.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>';
-    var on = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] }[v] || [];
-    [].forEach.call(el.children, function(p, j){ p.style.visibility = on.indexOf(j) >= 0 ? 'visible' : 'hidden'; });
-    el.classList.toggle('dbl', !!dbl);
+// ── 땅 문서 카드 ──
+function deedColor(i){ var k = T[i].k; return k === 'city' ? 'var(--s' + WT.sideOf(i) + ')' : k === 'spot' ? 'var(--air-red)' : 'var(--air-blue)'; }
+function deedHTML(i, o){
+  o = o || {};
+  var t = T[i], own = G && G.own[i] >= 0 ? G.own[i] : -1, lv = own >= 0 ? G.lv[i] : -1;
+  var kind = t.k === 'city' ? SIDE_NAME[WT.sideOf(i)] : t.k === 'spot' ? '관광지' : '탈것';
+  var h = '<div class="deed ' + (o.cls || '') + '" style="--sc:' + deedColor(i) + (own >= 0 ? ';--oc:' + pc(own) : '') + '" data-name="' + esc(t.n) + '">' +
+    '<div class="hd"><small>' + kind + '</small><b>' + esc(t.n) + '</b><span class="code">' + (t.en || '') + '</span>' +
+    (t.k !== 'city' ? '<svg class="ic" viewBox="0 0 24 24">' + (ICONS[t.en] || '') + '</svg>' : '') + '</div>' +
+    '<div class="price"><span>땅값</span><span>' + won(t.p) + '</span></div><table>';
+  if (t.k === 'city'){
+    for (var k = 0; k <= 4; k++) h += '<tr class="' + (k === lv ? 'now' : '') + '"><td>' + (k ? WT.LV_NAME[k] : '대지료') + '</td><td>' + won(t.t[k]) + '</td></tr>';
+    h += '</table><div class="ft">짓기 별장 ' + won(t.b[0]) + '씩 · 빌딩 +' + won(t.b[1] - 2 * t.b[0]) + ' · 호텔 +' + won(t.b[2] - t.b[1]) + '</div>';
+  } else {
+    h += '<tr class="now"><td>통행료</td><td>' + won(t.t[0]) + '</td></tr>';
+    if (i === WT.SHUTTLE) h += '<tr><td>우주여행 이용료</td><td>' + won(WT.SPACE_FEE) + '</td></tr>';
+    h += '</table><div class="ft">' + (t.k === 'spot' ? '건물을 지을 수 없는 관광지' : '건물을 지을 수 없는 탈것') + '</div>';
+  }
+  if (own >= 0 && o.stamp !== false) h += '<div class="stamp">' + esc(G.players[own].name) + '</div>';
+  return h + '</div>';
+}
+// 땅을 사면 문서 카드가 뒤집혀 나타나고 도장이 찍힌 뒤 산 사람 쪽으로 날아감
+var deedSkip = null;
+function flyDeed(i, p){
+  return new Promise(function(res){
+    var box = document.createElement('div');
+    box.className = 'cardfx';
+    box.innerHTML = deedHTML(i, { stamp:false });
+    document.body.appendChild(box);
+    var card = box.firstChild, ended = false;
+    card.style.setProperty('--oc', pc(p));
+    var finish = function(){ if (ended) return; ended = true; box.remove(); deedSkip = null; var pp = $('pp' + p); if (pp){ pp.classList.remove('bump'); void pp.offsetWidth; pp.classList.add('bump'); } res(); };
+    deedSkip = finish;
+    card.animate([{ transform:'translate(-50%,-50%) rotateY(180deg) scale(.4)', opacity:0 }, { transform:'translate(-50%,-50%) rotateY(0) scale(1)', opacity:1 }], { duration:ms(450), easing:'cubic-bezier(.2,1.3,.4,1)', fill:'forwards' });
+    setTimeout(function(){
+      if (ended) return;
+      var st = document.createElement('div'); st.className = 'stamp'; st.textContent = G.players[p].name;
+      card.appendChild(st);
+      st.animate([{ transform:'rotate(-14deg) scale(2.4)', opacity:0 }, { transform:'rotate(-14deg) scale(1)', opacity:.88 }], { duration:ms(220), easing:'ease-in', fill:'forwards' });
+      snd('stamp');
+    }, ms(520));
+    setTimeout(function(){
+      if (ended) return;
+      var pp = $('pp' + p), r = card.getBoundingClientRect();
+      if (!pp){ finish(); return; }
+      var t = pp.getBoundingClientRect();
+      var dx = (t.left + t.width / 2) - (r.left + r.width / 2), dy = (t.top + t.height / 2) - (r.top + r.height / 2);
+      card.animate([{ transform:'translate(-50%,-50%) scale(1)', opacity:1 }, { transform:'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(.12) rotate(12deg)', opacity:.5 }], { duration:ms(480), easing:'cubic-bezier(.5,0,.7,.4)', fill:'forwards' });
+      setTimeout(function(){ snd('card'); finish(); }, ms(470));
+    }, ms(1250));
+    box.onclick = finish;
   });
 }
 
@@ -1241,8 +1429,8 @@ function renderAct(){
         break;
       case 'buy': {
         var i = G.pend.t, t = T[i];
-        html = head(mine + ' · ' + esc(t.n)) + timerBar + '<dl class="offer"><dt>땅값</dt><dd>' + won(t.p) + '</dd><dt>통행료</dt><dd>' + (t.k === 'city' ? won(t.t[0]) + ' → 호텔 ' + won(t.t[4]) : won(t.t[0])) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - t.p) + '</dd></dl>' +
-          (t.k === 'city' && !G.cfg.buildOnBuy ? '<p>건물은 다음에 다시 왔을 때 지을 수 있어요.</p>' : '') +
+        html = head(mine + ' · ' + esc(t.n) + ' 살까요?') + timerBar + '<div class="buyrow">' + deedHTML(i) + '<div style="display:grid;gap:8px;min-width:0"><dl class="offer"><dt>땅값</dt><dd>' + won(t.p) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - t.p) + '</dd><dt>내 카드</dt><dd>' + WT.owned(G, G.turn).length + '장 → ' + (WT.owned(G, G.turn).length + 1) + '장</dd></dl>' +
+          (t.k === 'city' && !G.cfg.buildOnBuy ? '<p>건물은 다음에 다시 왔을 때 지을 수 있어요.</p>' : '') + '</div></div>' +
           '<div class="row"><button class="btn main grow" id="aBuy">사기 <small>' + won(t.p) + '</small></button><button class="btn grow" id="aSkip">안 사기</button></div>';
         break;
       }
@@ -1296,7 +1484,7 @@ function myStuffBtn(){
   var me = MODE === 'online' ? NET.seat : (myTurn() ? G.turn : G.players.filter(function(x){ return !x.ai; }).length === 1 ? G.players.findIndex(function(x){ return !x.ai; }) : -1);
   if (me < 0 || !G.players[me] || G.players[me].out) return '';
   var cnt = WT.owned(G, me).length;
-  return '<div class="row"><button class="btn grow" id="aMy" style="min-height:38px;font-size:13.5px">내 땅 ' + cnt + '곳' + (G.players[me].esc ? ' · 무전기' : '') + '</button></div>';
+  return '<div class="row"><button class="btn grow" id="aMy" style="min-height:38px;font-size:13.5px">내 카드첩 · ' + cnt + '장' + (G.players[me].esc ? ' · 무전기' : '') + '</button></div>';
 }
 
 // ── 기록 ──
@@ -1353,24 +1541,49 @@ function floatAt(i, text, plus){
 function flashTile(i){ var d = tileEls[i]; if (!d) return; d.classList.remove('flash'); void d.offsetWidth; d.classList.add('flash'); }
 function setMoney(i, v){ var pp = $('pp' + i); if (pp) pp.querySelector('.money').textContent = won(v); }
 
+// 주사위 던지기: 오른쪽 아래에서 날아와 두세 번 튀고 구르다 멈춤
 async function rollAnim(d){
+  if (!$('cb0')) buildDice();
+  var D = ds(), dur = ms(1150), stage = $('stage').classList.contains('flat');
   snd('roll');
-  var els = [$('d0'), $('d1')];
-  els.forEach(function(e){ e.classList.add('shake'); });
-  var end = Date.now() + ms(650);
-  while (Date.now() < end){ showDice([die(), die()]); await wait(70); }
-  els.forEach(function(e){ e.classList.remove('shake'); });
-  showDice(d, d[0] === d[1]);
-  snd('land');
+  var anims = [0, 1].map(function(k){
+    var dp = $('dp' + k), cb = $('cb' + k), sh = $('ds' + k);
+    dp.classList.toggle('dbl', d[0] === d[1]);
+    var sx = D * (3.2 + k * 0.6 + Math.random()), sy = D * (4.5 + Math.random() * 1.5), h = D / 2;
+    var j = function(){ return (Math.random() - 0.5) * D * 0.5; };
+    var P = function(x, y, z){ return 'translate3d(' + x + 'px,' + y + 'px,' + (stage ? 0 : z) + 'px)' + (stage ? ' scale(' + (1 + (z - h) / D * 0.35) + ')' : ''); };
+    var path = [
+      { transform:P(sx, sy, D * 4.5), offset:0, easing:'ease-in' },
+      { transform:P(sx * 0.45 + j(), sy * 0.4 + j(), h), offset:0.38, easing:'ease-out' },
+      { transform:P(sx * 0.25 + j(), sy * 0.18 + j(), h + D * 1.1), offset:0.55, easing:'ease-in' },
+      { transform:P(sx * 0.1, sy * 0.06, h), offset:0.72, easing:'ease-out' },
+      { transform:P(sx * 0.04, sy * 0.02, h + D * 0.28), offset:0.83, easing:'ease-in' },
+      { transform:P(0, 0, h), offset:1 }
+    ];
+    diceZ[k] = Math.round((Math.random() - 0.5) * 50);
+    var spinX = 2 + Math.floor(Math.random() * 2), spinY = 1 + Math.floor(Math.random() * 2);
+    var r0 = 'rotateZ(' + (diceZ[k] + 180) + 'deg) rotateX(' + Math.round(Math.random() * 90) + 'deg) rotateY(' + Math.round(Math.random() * 90) + 'deg)';
+    var a1 = dp.animate(path, { duration:dur, easing:'linear' });
+    var a2 = cb.animate([{ transform:r0 }, { transform:cubeRot(d[k], diceZ[k], spinX, spinY), offset:0.8 }, { transform:cubeRot(d[k], diceZ[k], spinX, spinY) }], { duration:dur, easing:'cubic-bezier(.25,.6,.35,1)' });
+    var a3 = sh.animate([{ opacity:0, transform:'scale(2.2)' }, { opacity:1, transform:'scale(1.15)', offset:0.38 }, { opacity:.6, transform:'scale(1.5)', offset:0.55 }, { opacity:1, transform:'scale(1.15)' }], { duration:dur });
+    cb.style.transform = cubeRot(d[k], diceZ[k]);
+    return [a1, a2, a3];
+  });
+  [0.38, 0.72, 0.9].forEach(function(f, i){ setTimeout(function(){ snd('clack'); }, dur * f + i * 15); });
+  await wait(1150);
+  anims.forEach(function(a){ a.forEach(function(x){ try{ x.cancel(); }catch(e){} }); });
+  showDice(d);
 }
 async function stepAnim(p, from, n){
-  var dir = n < 0 ? -1 : 1, cnt = Math.abs(n), per = cnt >= 40 ? 28 : 115;
+  var dir = n < 0 ? -1 : 1, cnt = Math.abs(n), per = cnt >= 40 ? 28 : 120, e = tokEls[p];
   for (var s = 0; s < cnt; s++){
     DP[p] = (DP[p] + dir + N) % N;
     placeToks(); renderTiles();
+    if (cnt < 40){ e.classList.remove('hop'); void e.offsetWidth; e.classList.add('hop'); }
     if (s % (cnt >= 40 ? 4 : 1) === 0) snd('step');
     await wait(per);
   }
+  e.classList.remove('hop');
 }
 async function flyAnim(p, to, ms0){
   var e = tokEls[p]; e.classList.add('fly');
@@ -1384,7 +1597,7 @@ function showKey(id, mine){
   var k = WT.KEYS[id], box = document.createElement('div');
   box.className = 'keycard';
   box.innerHTML = '<div class="kc" role="dialog" aria-label="황금열쇠"><small>GOLDEN KEY · 황금열쇠</small><h3>' + esc(k.n) + '</h3><p>' + esc(k.d) + '</p></div>';
-  $('center').appendChild(box);
+  document.body.appendChild(box);
   snd('key');
   return new Promise(function(res){
     var done = function(){ if (!box.isConnected) return; box.remove(); clearTimeout(keyT); keySkip = null; res(); };
@@ -1413,8 +1626,8 @@ async function play(g){
       case 'fly': setNews(line); await flyAnim(e.p, e.to, 800); break;
       case 'salary': money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); break;
       case 'key': setNews(line); await showKey(e.c, isMineSeat(e.p)); break;
-      case 'buy': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('buy'); setNews(line); G.own = G.own.slice(); G.own[e.t] = e.p; renderTiles(); await wait(650); break;
-      case 'build': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('build'); setNews(line); G.lv = G.lv.slice(); G.lv[e.t] = e.lv; renderTiles(); await wait(650); break;
+      case 'buy': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('buy'); setNews(line); G.own = G.own.slice(); G.own[e.t] = e.p; renderTiles(); await flyDeed(e.t, e.p); renderPeople(); money.forEach(function(v, i){ setMoney(i, v); }); break;
+      case 'build': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('build'); setNews(line); G.lv = G.lv.slice(); G.lv[e.t] = e.lv; renderTiles(); await wait(750); break;
       case 'toll': case 'spacefee': case 'gift':
         money[e.p] -= e.a; money[e.to] += e.a; setMoney(e.p, money[e.p]); setMoney(e.to, money[e.to]);
         floatAt(e.p, '−' + won(e.a)); floatAt(e.to, '+' + won(e.a), true); snd(e.k === 'gift' ? 'coin' : 'pay'); setNews(line); await wait(e.k === 'gift' ? 380 : 800); break;
@@ -1423,7 +1636,9 @@ async function play(g){
       case 'island': case 'triple': setNews(line); snd('sad'); await wait(700); break;
       case 'stay': case 'out': case 'radio': case 'spaceport': case 'cant': case 'vip': case 'halfsale': case 'nohalf': case 'lastround':
         setNews(line); await wait(650); break;
-      case 'sell': case 'sellcard': case 'paid': setNews(line); snd('coin'); await wait(e.auto ? 260 : 420); break;
+      case 'sell': if (e.t != null){ G.own = G.own.slice(); G.lv = G.lv.slice(); if (e.lv < 0){ G.own[e.t] = -1; G.lv[e.t] = 0; } else G.lv[e.t] = e.lv; renderTiles(); }
+      /* falls through */
+      case 'sellcard': case 'paid': setNews(line); snd('coin'); await wait(e.auto ? 260 : 420); break;
       case 'skip': setNews(line); await wait(250); break;
       case 'bankrupt': setNews(line); snd('sad'); await wait(1100); break;
       case 'over': setNews(line); break;
@@ -1553,20 +1768,13 @@ function swRow(t, d, on, cb, disabled){
 }
 
 function tileSheet(i){
-  var t = T[i], html = '<h2>' + esc(t.n) + '</h2>';
+  var t = T[i], html = '';
   if (WT.isDeed(i)){
-    var o = G ? G.own[i] : -1, lv = G ? G.lv[i] : 0;
-    html += '<p class="lead">' + (t.k === 'city' ? SIDE_NAME[WT.sideOf(i)] + ' · ' : t.k === 'spot' ? '관광지 · 건물을 지을 수 없어요 · ' : '탈것 · ') + '땅값 ' + won(t.p) + '</p>';
-    html += '<p>' + (o >= 0 ? pn(o) + ' 님 땅' + (t.k === 'city' ? ', ' + WT.LV_NAME[lv] : '') : '아직 주인이 없어요') + '</p>';
-    if (t.k === 'city'){
-      html += '<h3>건물과 통행료</h3><table class="tolls"><tr><th></th><th style="text-align:right">짓는 값</th><th style="text-align:right">통행료</th></tr>';
-      for (var k = 0; k <= 4; k++) html += '<tr class="' + (o >= 0 && k === lv ? 'now' : '') + '"><th>' + WT.LV_NAME[k] + '</th><td>' + (k ? won(WT.stepCost(i, k - 1)) : won(t.p)) + '</td><td>' + won(t.t[k]) + '</td></tr>';
-      html += '</table><p class="hint">별장은 2채까지, 그다음 빌딩, 호텔로 키워요. 짓는 값은 한 단계 올릴 때 드는 돈이에요.</p>';
-    } else {
-      html += '<p>통행료 <b class="num">' + won(t.t[0]) + '</b></p>';
-      if (i === WT.SHUTTLE) html += '<p class="hint">우주여행 칸에 선 사람은 왕복선 주인에게 이용료 20만 원을 내요.</p>';
-    }
+    var o = G ? G.own[i] : -1;
+    html = '<div style="display:grid;justify-items:center;gap:10px">' + deedHTML(i, { cls:'big' }) + '<p style="margin:0">' + (o >= 0 ? pn(o) + ' 님 카드' + (t.k === 'city' ? ' · ' + WT.LV_NAME[G.lv[i]] : '') + ' · 통행료 <b class="num">' + won(WT.tollOf(G, i)) + '</b>' : '아직 주인이 없어요. 이 칸에 서면 살 수 있어요.') + '</p>' +
+      (t.k === 'city' ? '<p class="hint" style="margin:0">내 도시에 다시 서면 별장(2채까지) → 빌딩 → 호텔로 키울 수 있어요.</p>' : '') + '</div>';
   } else {
+    html = '<h2>' + esc(t.n) + '</h2>';
     var d = {
       start:'지나가거나 멈추면 월급 20만 원을 받아요.',
       island:'멈추면 세 번 갇혀요. 자기 차례에 더블이 나오면 바로 나가요. 무전기가 있으면 언제든 나갈 수 있어요.',
@@ -1582,26 +1790,42 @@ function tileSheet(i){
   sh.querySelector('#tClose').onclick = closeSheet;
 }
 
-function propsSheet(){
-  var me = MODE === 'online' ? NET.seat : (myTurn() ? G.turn : G.players.findIndex(function(x){ return !x.ai; }));
-  if (me < 0) return;
-  var canSell = G.turn === me && !busy && myTurn() && ['roll','buy','build','toll','space','pay'].indexOf(G.phase) >= 0;
-  var p = G.players[me], list = WT.owned(G, me);
-  var html = '<h2>' + esc(p.name) + ' 님의 땅</h2><p class="lead">현금 ' + won(p.money) + ' · 총자산 ' + won(WT.assets(G, me)) + '</p>';
-  if (G.phase === 'pay' && G.turn === me) html += '<p><b>' + won(G.pend.a) + '</b>을 내야 해요. 모자란 돈 ' + won(Math.max(0, G.pend.a - p.money)) + '</p>';
-  html += '<div class="props">';
-  if (!list.length) html += '<p class="hint">아직 산 땅이 없어요.</p>';
-  list.forEach(function(i){
-    var lv = G.lv[i], sv = lv > 0 ? Math.floor(WT.stepCost(i, lv - 1) / 2) : Math.floor(T[i].p / 2);
-    html += '<div class="prop" style="--sc:' + (T[i].k === 'city' ? 'var(--s' + WT.sideOf(i) + ')' : 'var(--line)') + '"><span class="sb"></span><span class="pn">' + esc(T[i].n) + '<small>' + (T[i].k === 'city' ? (lv ? WT.LV_NAME[lv] : '건물 없음') + ' · ' : '') + '통행료 ' + won(WT.tollOf(G, i)) + '</small></span>' +
-      (canSell ? '<button class="btn" data-sell="' + i + '">' + (lv > 0 ? '건물' : '땅') + ' 팔기 +' + won(sv) + '</button>' : '') + '</div>';
+function meIndex(){ return MODE === 'online' ? NET.seat : (myTurn() ? G.turn : G.players.findIndex(function(x){ return !x.ai; })); }
+function propsSheet(){ albumSheet(meIndex()); }
+// 여행 카드첩: 모은 땅 문서 카드. 내 차례면 여기서 은행에 팔 수 있음
+var DEEDS = []; for (var di = 0; di < N; di++) if (WT.isDeed(di)) DEEDS.push(di);
+function albumSheet(who){
+  if (!G) return;
+  if (who < 0 || who == null) who = 0;
+  var me = meIndex();
+  var canSell = who === me && G.turn === me && !busy && myTurn() && ['roll','buy','build','toll','space','pay'].indexOf(G.phase) >= 0;
+  var p = G.players[who], list = WT.owned(G, who);
+  var html = '<h2>여행 카드첩</h2><div class="ptabs">' + G.players.map(function(x, i){ return '<button data-who="' + i + '" class="' + (i === who ? 'on' : '') + '" style="--c:' + pc(i) + '"><i></i>' + esc(x.name) + ' ' + WT.owned(G, i).length + '</button>'; }).join('') + '</div>';
+  html += '<p class="lead">' + esc(p.name) + ' · 현금 ' + won(p.money) + ' · 총자산 ' + won(WT.assets(G, who)) + (p.esc ? ' · 무전기' : '') + (p.vip ? ' · 우대권 ' + p.vip + '장' : '') + '</p>';
+  if (G.phase === 'pay' && G.turn === who && who === me) html += '<p><b>' + won(G.pend.a) + '</b>을 내야 해요. 모자란 돈 <b>' + won(Math.max(0, G.pend.a - p.money)) + '</b> · 은행에 팔면 들인 돈의 절반을 받아요.</p>';
+  var prog = [0, 1, 2, 3].map(function(sd){
+    var cs = DEEDS.filter(function(i){ return T[i].k === 'city' && WT.sideOf(i) === sd; });
+    return '<span style="box-shadow:inset 3px 0 0 var(--s' + sd + ')">' + SIDE_NAME[sd] + ' <b>' + cs.filter(function(i){ return G.own[i] === who; }).length + '/' + cs.length + '</b></span>';
+  });
+  var spots = DEEDS.filter(function(i){ return T[i].k !== 'city'; });
+  prog.push('<span>관광지·탈것 <b>' + spots.filter(function(i){ return G.own[i] === who; }).length + '/' + spots.length + '</b></span>');
+  html += '<div class="prog">' + prog.join('') + '</div><div class="album">';
+  DEEDS.forEach(function(i){
+    var o = G.own[i];
+    if (o === who){
+      var lv = G.lv[i], sv = lv > 0 ? Math.floor(WT.stepCost(i, lv - 1) / 2) : Math.floor(T[i].p / 2);
+      html += '<div class="slot">' + deedHTML(i, { cls:'mini', stamp:false }) + '<span class="cap">' + (T[i].k === 'city' ? (lv ? WT.LV_NAME[lv] : '건물 없음') + ' · ' : '') + '통행료 ' + won(WT.tollOf(G, i)) + '</span>' +
+        (canSell ? '<button class="btn" data-sell="' + i + '">' + (lv > 0 ? '건물' : '땅') + ' 팔기 +' + won(sv) + '</button>' : '') + '</div>';
+    } else {
+      html += '<div class="slot">' + deedHTML(i, { cls:'mini ghost', stamp:false }) + '<span class="cap">' + (o >= 0 ? '<b style="color:' + pc(o) + '">' + esc(G.players[o].name) + '</b> 님 카드' : '주인 없음 · ' + won(T[i].p)) + '</span></div>';
+    }
   });
   html += '</div>';
-  if (p.esc) html += '<div class="prop" style="--sc:var(--gold)"><span class="sb"></span><span class="pn">무인도 탈출 무전기<small>은행에 20만 원에 팔 수 있어요</small></span>' + (canSell ? '<button class="btn" id="sCard">팔기 +20만</button>' : '') + '</div>';
-  if (canSell) html += '<p class="hint">은행에 팔면 들인 돈의 절반을 받아요. 건물이 있으면 맨 위 건물부터 팔려요.</p>';
+  if (canSell && p.esc) html += '<div class="btns"><button class="btn gold" id="sCard">무전기 은행에 팔기 +20만</button></div>';
   html += '<div class="btns"><button class="btn" id="pClose">닫기</button></div>';
   var sh = openSheet(html, 'props');
   sh.querySelector('#pClose').onclick = closeSheet;
+  [].forEach.call(sh.querySelectorAll('[data-who]'), function(b){ b.onclick = function(){ albumSheet(+b.dataset.who); }; });
   [].forEach.call(sh.querySelectorAll('[data-sell]'), function(b){ b.onclick = function(){ closeSheet(); act({ type:'sell', t:+b.dataset.sell }); }; });
   var sc = sh.querySelector('#sCard'); if (sc) sc.onclick = function(){ closeSheet(); act({ type:'sellCard' }); };
 }
@@ -1773,6 +1997,7 @@ function menuSheet(){
   var html = '<h2>메뉴</h2><div class="btns col">' +
     (MODE === 'online' ? '<button class="btn" id="mInv">초대 링크 복사</button>' : '<button class="btn main" id="mNew">새 여행</button>') +
     '<button class="btn" id="mRules">규칙 보기</button>' +
+    '<button class="btn" id="mFlat">' + (store.flat ? '판 기울여 보기 (3D)' : '위에서 판 보기 (평면)') + '</button>' +
     '<button class="btn" id="mFast">' + (store.fast ? '움직임 보통 빠르기로' : '움직임 빠르게') + '</button>' +
     (MODE === 'online' ? '<button class="btn" id="mLeave">방 나가기</button>' : (SERVER ? '<button class="btn" id="mOn">온라인으로 하기</button>' : '')) +
     '<button class="btn" id="mClose">닫기</button></div>';
@@ -1780,6 +2005,7 @@ function menuSheet(){
   var on = function(id, f){ var e = sh.querySelector('#' + id); if (e) e.onclick = f; };
   on('mNew', function(){ setupSheet(store.mode === 'local' ? 'local' : 'cpu'); });
   on('mRules', rulesSheet);
+  on('mFlat', function(){ store.flat = !store.flat; save(); applyFlat(); closeSheet(); });
   on('mFast', function(){ store.fast = !store.fast; SPEED = store.fast ? 0.55 : 1; save(); closeSheet(); toast(store.fast ? '움직임을 빠르게 했어요' : '보통 빠르기로 했어요'); });
   on('mOn', function(){ setupSheet('online'); });
   on('mClose', closeSheet);
@@ -1963,6 +2189,9 @@ function snd(k){
       case 'key': [784, 988, 1175, 1568].forEach(function(f, i){ tone(f, .16, 'sine', .08, i * .07); }); break;
       case 'fly': tone(300, .5, 'sawtooth', .03); tone(600, .5, 'sine', .05, .1); break;
       case 'sad': tone(330, .2, 'triangle', .1); tone(262, .35, 'triangle', .1, .18); break;
+      case 'clack': tone(900 + Math.random() * 300, .03, 'square', .05); tone(200, .05, 'triangle', .12); break;
+      case 'stamp': tone(120, .12, 'square', .12); tone(80, .2, 'triangle', .2, .02); break;
+      case 'card': tone(1400, .05, 'sine', .05); tone(1800, .08, 'sine', .04, .04); break;
       case 'turn': tone(880, .09, 'sine', .08); tone(1175, .14, 'sine', .08, .09); break;
       case 'beep': tone(1046, .07, 'square', .05); break;
       case 'win': [523, 659, 784, 1046, 784, 1046].forEach(function(f, i){ tone(f, .2, 'triangle', .1, i * .11); }); break;
@@ -1992,17 +2221,18 @@ function demoBoard(){ // 시작 화면 뒤에 보일 빈 판
   MODE = 'local'; DEMO = true; buildToks(); showDice([5, 2]); render(); setNews('주사위를 굴려 세계를 한 바퀴!');
 }
 
+function applyFlat(){ $('stage').classList.toggle('flat', !!store.flat); setTimeout(function(){ sizeDice(); }, 50); }
 (function boot(){
-  drawBoard(); soundIcon(); showDice([5, 2]);
+  drawBoard(); applyFlat(); buildDice(); soundIcon(); showDice([5, 2]);
   $('bSnd').onclick = function(){ store.sound = !store.sound; save(); soundIcon(); if (store.sound) snd('coin'); };
   $('bMenu').onclick = menuSheet;
   $('bSay').onclick = sayDialog;
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && SHEET && SHEET !== 'start' && SHEET !== 'lobby') closeSheet();
-    if ((e.key === ' ' || e.key === 'Enter') && !SHEET && keySkip){ e.preventDefault(); keySkip(); return; }
+    if ((e.key === ' ' || e.key === 'Enter') && !SHEET && (keySkip || deedSkip)){ e.preventDefault(); (keySkip || deedSkip)(); return; }
     if (e.key === ' ' && !SHEET && G && G.phase === 'roll' && myTurn() && !busy && document.activeElement === document.body){ e.preventDefault(); act({ type:'roll' }); }
   });
-  window.addEventListener('resize', function(){ if (G) placeToks(); });
+  window.addEventListener('resize', function(){ sizeDice(); if (G) placeToks(); });
   var hashCode = (location.hash.match(/^#(\d{6})$/) || [])[1];
   var lastRoom = lsGet('wt-room');
   if (SERVER && lastRoom && store.netName && (!hashCode || hashCode === lastRoom)){ demoBoard(); goOnline(lastRoom, store.netName); return; }

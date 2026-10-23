@@ -70,7 +70,8 @@ export function animMs(log) {
       case 'key': t += 2100; break;
       case 'fly': t += 850; break;
       case 'warp': t += 650; break;
-      case 'buy': case 'build': t += 700; break;
+      case 'buy': t += 1800; break;
+      case 'build': t += 800; break;
       case 'toll': case 'spacefee': t += 850; break;
       case 'bankrupt': t += 1150; break;
       case 'gift': t += 400; break;
