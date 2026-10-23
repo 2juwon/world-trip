@@ -1150,10 +1150,11 @@ function placeToks(){
 }
 
 // ── 사람/차례 ──
+function isAway(i){ var R = NET.room; return !!(R && R.seats[i] && R.seats[i].away); }
 function myTurn(){
   if (!G || G.phase === 'over') return false;
   var p = G.players[G.turn];
-  if (MODE === 'online') return G.turn === NET.seat && !(NET.room && NET.room.away && NET.room.away[NET.seat]);
+  if (MODE === 'online') return G.turn === NET.seat && !isAway(NET.seat);
   return !p.ai;
 }
 
@@ -1174,7 +1175,7 @@ function renderPeople(){
       if (i === NET.seat) sub = '나';
       else if (s.kind === 'bot') sub = s.left ? '컴퓨터가 대신' : '컴퓨터';
       else if (s.kind === 'human' && !s.online) sub = '연결 끊김';
-      if (R.away && R.away[i]) tags.push('<span class="tag">자리 비움</span>');
+      if (isAway(i)) tags.push('<span class="tag">자리 비움</span>');
     } else if (p.ai) sub = LVNAME[p.ai] || '컴퓨터';
     if (sub){ tags.unshift('<span class="tag">' + sub + '</span>'); sub = ''; }
     var say = sayOn && R.say.seat === i ? '<span class="say">' + esc(SAYS[R.say.k]) + '</span>' : '';
@@ -1216,7 +1217,7 @@ function renderAct(){
     html = head('여행 끝') + '<p>' + pn(G.winner) + ' 님이 1등이에요.</p><div class="row"><button class="btn main grow" id="aOver">결과 보기</button></div>';
   } else if (busy){
     html = head(esc(p.name) + ' 차례') + '<p>이동하는 중…</p>';
-  } else if (MODE === 'online' && NET.room && NET.room.away && NET.room.away[NET.seat]){
+  } else if (MODE === 'online' && G.turn === NET.seat && isAway(NET.seat)){
     html = head('자리 비움') + '<p>시간이 두 번 지나서 컴퓨터가 대신 두고 있어요.</p><div class="row"><button class="btn main grow" id="aBack">돌아왔어요</button></div>';
   } else if (!myTurn()){
     var who = p.ai || (MODE === 'online' && NET.room && NET.room.seats[G.turn] && NET.room.seats[G.turn].kind === 'bot') ? '컴퓨터가 생각하는 중…' : esc(p.name) + ' 님을 기다리는 중…';
@@ -2004,8 +2005,8 @@ function demoBoard(){ // 시작 화면 뒤에 보일 빈 판
   window.addEventListener('resize', function(){ if (G) placeToks(); });
   var hashCode = (location.hash.match(/^#(\d{6})$/) || [])[1];
   var lastRoom = lsGet('wt-room');
+  if (SERVER && lastRoom && store.netName && (!hashCode || hashCode === lastRoom)){ demoBoard(); goOnline(lastRoom, store.netName); return; }
   if (SERVER && hashCode){ demoBoard(); setupSheet('online'); return; }
-  if (SERVER && lastRoom && store.netName){ demoBoard(); goOnline(lastRoom, store.netName); return; }
   if (store.game && store.game.v === 1 && store.game.phase !== 'over'){
     G = store.game; MODE = 'local';
     if (G.cfg.timeMin && store.seen){ G.t0 += Math.max(0, Date.now() - store.seen); }
