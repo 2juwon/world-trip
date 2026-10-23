@@ -102,6 +102,7 @@
     start: 2930,       // 시작 자금 293만 원
     triple: true,      // 더블 세 번이면 무인도
     buildOnBuy: false, // 산 차례에 바로 건물 (원작은 다음 방문부터)
+    takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배) 주고 인수 (호텔은 못 함)
     rounds: 0,         // 0 = 끝까지(파산), n = n바퀴 뒤 총자산
     timeMin: 0         // 0 = 시간 제한 없음, n분이 지나면 그 바퀴까지
   };
@@ -254,7 +255,7 @@
         var a = tollOf(g, i);
         if (p.vip > 0) { g.phase = 'toll'; g.pend = { t: i, a: a, to: o }; return; }
         ev(g, { k: 'toll', p: pi, to: o, t: i, a: Math.min(a, p.money + sellValueAll(g, pi)) });
-        if (charge(g, pi, o, a, 'toll')) return done(g);
+        if (charge(g, pi, o, a, 'toll')) return afterToll(g, i);
         return afterCharge(g);
       }
       case 'key': return drawKey(g);
@@ -288,6 +289,18 @@
   }
   function afterCharge(g) { // charge가 false: 갚기 단계로 갔거나 파산함
     if (g.phase === 'pay' || g.phase === 'over') return;
+    return done(g);
+  }
+
+  // 땅 인수: 웃돈(땅값+건물값의 2배)을 주인에게 주고 가져옴. 호텔은 못 가져감
+  function takeoverPrice(g, i) { return 2 * (T[i].p + buildValue(i, g.lv[i])); }
+  function canTakeover(g, pi, i) {
+    var o = g.own[i];
+    return !!g.cfg.takeover && o >= 0 && o !== pi && !g.players[o].out && !g.players[pi].out && g.lv[i] < 4 && g.players[pi].money >= takeoverPrice(g, i);
+  }
+  function afterToll(g, i) {
+    if (g.phase === 'over') return;
+    if (canTakeover(g, g.turn, i)) { g.phase = 'takeover'; g.pend = { t: i, a: takeoverPrice(g, i), from: g.own[i] }; return; }
     return done(g);
   }
 
@@ -423,7 +436,8 @@
         var i = g.pend.t, lv = a.lv | 0;
         return lv > g.lv[i] && lv <= 4 && p.money >= buildValue(i, lv) - buildValue(i, g.lv[i]);
       }
-      case 'skip': return g.phase === 'buy' || g.phase === 'build';
+      case 'skip': return g.phase === 'buy' || g.phase === 'build' || g.phase === 'takeover';
+      case 'takeover': return g.phase === 'takeover' && p.money >= g.pend.a;
       case 'toll': return g.phase === 'toll';
       case 'sell': return ['roll', 'buy', 'build', 'toll', 'space', 'pay'].indexOf(g.phase) >= 0 && g.own[a.t] === g.turn;
       case 'sellCard': return g.phase !== 'over' && p.esc > 0;
@@ -497,10 +511,19 @@
       case 'toll': {
         var pd = g.pend;
         g.pend = null;
-        if (a.use) { p.vip--; g.disc.push(keyIndex('vip')); ev(g, { k: 'vip', p: pi, t: pd.t, a: pd.a }); done(g); return g; }
+        if (a.use) { p.vip--; g.disc.push(keyIndex('vip')); ev(g, { k: 'vip', p: pi, t: pd.t, a: pd.a }); afterToll(g, pd.t); return g; }
         g.phase = 'roll'; // 잠깐 (charge가 pay로 바꿀 수 있게)
         ev(g, { k: 'toll', p: pi, to: pd.to, t: pd.t, a: Math.min(pd.a, p.money + sellValueAll(g, pi)) });
-        if (charge(g, pi, pd.to, pd.a, 'toll')) done(g); else afterCharge(g);
+        if (charge(g, pi, pd.to, pd.a, 'toll')) afterToll(g, pd.t); else afterCharge(g);
+        return g;
+      }
+      case 'takeover': {
+        var tk = g.pend, from = g.own[tk.t];
+        p.money -= tk.a; g.players[from].money += tk.a; g.own[tk.t] = pi;
+        ev(g, { k: 'takeover', p: pi, from: from, t: tk.t, a: tk.a });
+        g.pend = null;
+        if (T[tk.t].k === 'city' && g.lv[tk.t] < 4 && p.money >= stepCost(tk.t, g.lv[tk.t])) { g.phase = 'build'; g.pend = { t: tk.t }; return g; }
+        done(g);
         return g;
       }
       case 'sell': {
@@ -553,6 +576,7 @@
     T: T, N: N, KEYS: KEYS, START: START, ISLAND: ISLAND, FUND: FUND, SPACE: SPACE, DONATE: DONATE, SHUTTLE: SHUTTLE,
     SALARY: SALARY, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
     sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf,
+    takeoverPrice: takeoverPrice, canTakeover: canTakeover,
     newGame: newGame, apply: apply, legal: legal, viewFor: viewFor, actor: actor,
     assets: assets, owned: owned, alive: alive, sellValueAll: sellValueAll, autoSellOrder: autoSellOrder, clone: clone
   };

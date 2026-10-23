@@ -100,9 +100,9 @@ button:disabled{cursor:default; opacity:.45}
 .tile .tn{font-weight:800; word-break:keep-all; overflow-wrap:anywhere; padding:0 2px; position:relative; z-index:1}
 .tile .tp{font-family:var(--f-num); font-size:.82em; color:var(--ink-soft); margin-top:2px; position:relative; z-index:1}
 .tile.b-top{padding-top:12%} .tile.b-bottom{padding-bottom:12%} .tile.b-left{padding-left:14%} .tile.b-right{padding-right:14%}
-.tile.owned{background:color-mix(in srgb, var(--oc) 18%, var(--paper))}
-.tile.owned .tp{color:var(--oc); font-weight:600}
-.tile.owned .band{box-shadow:inset 0 0 0 2px var(--oc)}
+.tile.owned{background:color-mix(in srgb, var(--oc) 24%, var(--paper)); box-shadow:inset 0 0 0 2.5px var(--oc)}
+.tile.owned .tp{background:var(--oc); color:#fff; font-weight:700; border-radius:4px; padding:0 3px; margin-top:2px}
+.tile.owned .band{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7)}
 .tile.corner{font-size:clamp(8px, 1.8vw, 14px)}
 .tile.corner svg.ic{width:46%; height:46%; stroke:var(--ink); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
 .tile svg.ic{width:52%; height:42%; stroke:var(--ink); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; position:relative; z-index:1}
@@ -258,7 +258,7 @@ button:disabled{cursor:default; opacity:.45}
 
 
 .act h2{min-height:22px}
-.act .msg{min-height:2.9em; display:flex; align-items:center}
+.act .msg{min-height:2.9em}
 .act .row{flex-wrap:nowrap; min-height:46px}
 .act .row + .row{min-height:38px}
 .act .timer.off{visibility:hidden}
@@ -281,6 +281,7 @@ button:disabled{cursor:default; opacity:.45}
 .dflag{width:42px; height:28px; border-radius:4px; box-shadow:0 0 0 1px rgba(0,0,0,.15); flex:none}
 .dmin{border:1px solid var(--panel-line); background:var(--paper-2); border-radius:10px; padding:7px 10px; font-size:12.5px; font-weight:700; flex:none}
 .bside{display:grid; gap:6px; min-width:0}
+.tkline{margin:0; font-size:13.5px; line-height:1.45}
 .dpanel .row{display:flex; gap:8px}
 .dnow{margin:0; font-size:13.5px; color:var(--ink-soft)} .dnow b{color:var(--ink)}
 .dres{margin:0; font-size:13.5px; min-height:1.4em} .dres b{color:var(--air-blue)}
@@ -301,6 +302,17 @@ button:disabled{cursor:default; opacity:.45}
 .bopt.on{border-color:var(--air-blue); box-shadow:0 0 0 2px var(--air-blue), 0 8px 18px rgba(35,72,154,.2); background:color-mix(in srgb, var(--air-blue) 8%, var(--panel)); transform:translateY(-2px)}
 .bopt.on::after{content:"✓"; position:absolute; top:-8px; right:-6px; width:20px; height:20px; border-radius:50%; background:var(--air-blue); color:#fff; font-size:12px; font-weight:800; display:grid; place-items:center}
 
+
+.pawnopts{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px}
+.pawnopt{border:1.5px solid var(--panel-line); background:var(--paper-2); border-radius:14px; padding:10px 8px 8px; display:grid; gap:6px; justify-items:center}
+.pawnopt.on{border-color:var(--air-blue); box-shadow:0 0 0 2px var(--air-blue); background:color-mix(in srgb, var(--air-blue) 8%, var(--panel))}
+.pawnopt b{font-size:13px}
+.pawnopt .pv{display:flex; gap:2px; align-items:flex-end}
+.pvi{width:26px; height:52px; display:block}
+.pvi svg{width:100%; height:100%; overflow:visible}
+.bl.pin{width:3.4%; height:3.4%}
+.bl.pin .st{left:-10%; right:-30%; height:135%}
+.tile .own{display:none}
 /* 기록 */
 .log{grid-area:log; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:10px 12px; font-size:12.5px; color:var(--ink-soft); max-height:220px; overflow:auto; min-width:0}
 .log h3{margin:0 0 6px; font-size:12px; letter-spacing:.08em; color:var(--ink)}
@@ -441,7 +453,7 @@ store.setup = store.setup || {};
 var SU = store.setup;
 SU.cpu = SU.cpu || { name:'', n:2, lv:'normal' };
 SU.local = SU.local || { n:3, seats:[{name:'',who:'human'},{name:'',who:'human'},{name:'',who:'normal'},{name:'',who:'normal'}] };
-SU.cfg = Object.assign({ start:2930, triple:true, buildOnBuy:false, len:'r20' }, SU.cfg || {});
+SU.cfg = Object.assign({ start:2930, triple:true, buildOnBuy:false, takeover:true, len:'r20' }, SU.cfg || {});
 
 function rnd(){ try{ var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; }catch(e){ return Math.random(); } }
 function die(){ return 1 + Math.floor(rnd() * 6); }
@@ -554,6 +566,7 @@ function tokPos(i, k, cnt){
   if (cnt > 1){ x += off[k][0]; y += off[k][1]; } else y += 0.6;
   return [x, y];
 }
+function pinPos(i){ var r = tileRect(i); return [r[0] + r[2] * 0.8, r[1] + r[3] * 0.16]; } // 주인 깃발: 칸 오른쪽 위 (이름을 안 가림)
 function bandPos(i){ // 건물이 설 자리 = 띠 위
   var r = tileRect(i), b = bandSide(i);
   if (b === 'b-top') return [r[0] + r[2] / 2, r[1] + r[3] * 0.12];
@@ -561,17 +574,49 @@ function bandPos(i){ // 건물이 설 자리 = 띠 위
   if (b === 'b-left') return [r[0] + r[2] * 0.12, r[1] + r[3] / 2];
   return [r[0] + r[2] * 0.88, r[1] + r[3] / 2];
 }
-var PAWN = '<svg viewBox="0 0 20 40" aria-hidden="true"><ellipse cx="10" cy="36.5" rx="8.6" ry="3" style="fill:var(--c)"/><ellipse cx="10" cy="36" rx="8.6" ry="3" fill="rgba(0,0,0,.25)"/><ellipse cx="10" cy="35" rx="8.2" ry="2.6" style="fill:var(--c)"/>' +
-  '<path d="M4.4 35c1.1-6.3 3.3-10.6 3.6-16.2h4c.3 5.6 2.5 9.9 3.6 16.2z" style="fill:var(--c)" stroke="rgba(0,0,0,.3)" stroke-width=".6"/>' +
-  '<ellipse cx="10" cy="18.6" rx="5.4" ry="1.7" style="fill:var(--c)" stroke="rgba(0,0,0,.3)" stroke-width=".6"/>' +
-  '<circle cx="10" cy="11" r="6.4" style="fill:var(--c)" stroke="rgba(0,0,0,.3)" stroke-width=".6"/>' +
-  '<path d="M7.6 21.5c-.5 4.6-1.6 8.6-2.4 12" stroke="#fff" stroke-opacity=".5" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="7.9" cy="8.7" r="2" fill="#fff" fill-opacity=".6"/></svg>';
+// 말 모양: 판 위에 서 있는 그림 (fill은 그 사람 색)
+var C = 'style="fill:var(--c)"', OL = 'stroke="rgba(0,0,0,.32)" stroke-width=".6"', HL = 'fill="#fff" fill-opacity=".55"';
+var PAWNS = {
+  chess:{ n:'체스 말', svg:'<ellipse cx="10" cy="36.5" rx="8.6" ry="3" ' + C + '/><ellipse cx="10" cy="36" rx="8.6" ry="3" fill="rgba(0,0,0,.25)"/><ellipse cx="10" cy="35" rx="8.2" ry="2.6" ' + C + '/>' +
+    '<path d="M4.4 35c1.1-6.3 3.3-10.6 3.6-16.2h4c.3 5.6 2.5 9.9 3.6 16.2z" ' + C + ' ' + OL + '/><ellipse cx="10" cy="18.6" rx="5.4" ry="1.7" ' + C + ' ' + OL + '/><circle cx="10" cy="11" r="6.4" ' + C + ' ' + OL + '/>' +
+    '<path d="M7.6 21.5c-.5 4.6-1.6 8.6-2.4 12" stroke="#fff" stroke-opacity=".5" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="7.9" cy="8.7" r="2" ' + HL + '/>' },
+  plane:{ n:'비행기', svg:'<ellipse cx="10" cy="37" rx="6.5" ry="2.2" fill="#3b4457"/><rect x="9.3" y="22" width="1.4" height="15" fill="#5b6779"/>' +
+    '<path d="M1 18.5l1.6-6h2.4l2.6 5z" ' + C + ' ' + OL + '/><path d="M2 19.5c0-1.6 1.5-2.6 4-2.6h9.5c2.6 0 4.5 1.3 4.5 2.6s-1.9 2.6-4.5 2.6H6c-2.5 0-4-1-4-2.6z" ' + C + ' ' + OL + '/>' +
+    '<path d="M8 20.5l-3.5 6.5h3l6-6.5z" ' + C + ' ' + OL + '/><path d="M8 20.5l-3.5 6.5h3l6-6.5z" fill="rgba(0,0,0,.18)"/>' +
+    '<path d="M16.5 17.6c1.6.2 2.8.9 3.1 1.6h-3.1z" fill="#cfe3ff"/><circle cx="8" cy="18.8" r=".75" fill="#fff"/><circle cx="10.3" cy="18.8" r=".75" fill="#fff"/><circle cx="12.6" cy="18.8" r=".75" fill="#fff"/>' +
+    '<path d="M4 18.6c3-.8 8-.9 12-.4" stroke="#fff" stroke-opacity=".5" stroke-width=".8" fill="none"/>' },
+  balloon:{ n:'열기구', svg:'<ellipse cx="10" cy="37.6" rx="5" ry="1.6" fill="rgba(0,0,0,.25)"/>' +
+    '<path d="M10 2.5C3.8 2.5 1.8 8.5 2.6 13.6c.8 5 4.7 8.4 5.6 11.4h3.6c.9-3 4.8-6.4 5.6-11.4.8-5.1-1.2-11.1-7.4-11.1z" ' + C + ' ' + OL + '/>' +
+    '<path d="M10 2.5c-2.6 3.6-3 14.6-1.8 22.5M10 2.5c2.6 3.6 3 14.6 1.8 22.5" stroke="#fff" stroke-opacity=".7" stroke-width="1.3" fill="none"/>' +
+    '<ellipse cx="6.2" cy="8.6" rx="1.4" ry="2.6" ' + HL + '/><path d="M8.2 25l.5 6M11.8 25l-.5 6" stroke="#5a3d00" stroke-width=".6"/>' +
+    '<rect x="7.6" y="31" width="4.8" height="4.6" rx=".8" fill="#a8743a" stroke="#5a3d00" stroke-width=".6"/><path d="M7.6 32.6h4.8" stroke="#5a3d00" stroke-width=".5"/>' },
+  bag:{ n:'여행 가방', svg:'<ellipse cx="10" cy="37.4" rx="7.5" ry="1.8" fill="rgba(0,0,0,.25)"/><path d="M7.4 14.5v-4h5.2v4" stroke="#1b2436" stroke-width="1.5" fill="none" stroke-linejoin="round"/>' +
+    '<rect x="3" y="14" width="14" height="20.5" rx="2.6" ' + C + ' ' + OL + '/><path d="M7 15.5v17.5M13 15.5v17.5" stroke="rgba(0,0,0,.22)" stroke-width="1.2"/>' +
+    '<rect x="4.4" y="16.5" width="2" height="16" rx="1" ' + HL + '/><circle cx="10" cy="20.5" r="2" fill="#fff"/><rect x="9" y="26" width="5.5" height="3.4" rx=".6" fill="#f2c94c" transform="rotate(-10 11.7 27.7)"/>' +
+    '<circle cx="6" cy="35.7" r="1.4" fill="#1b2436"/><circle cx="14" cy="35.7" r="1.4" fill="#1b2436"/>' },
+  car:{ n:'자동차', svg:'<ellipse cx="10" cy="36.8" rx="9" ry="1.8" fill="rgba(0,0,0,.25)"/>' +
+    '<path d="M1.5 33v-3.6c0-1.3.8-2.2 2-2.4l2.3-4.6c.6-1.2 1.6-1.9 3-1.9h2.4c1.4 0 2.4.7 3 1.9L16.5 27c1.2.2 2 1.1 2 2.4V33z" ' + C + ' ' + OL + '/>' +
+    '<path d="M6.6 26.6l1.6-3.4c.3-.6.8-.9 1.4-.9h.8v4.3zM11.6 22.3h.4c.6 0 1.1.3 1.4.9l1.6 3.4h-3.4z" fill="#cfe3ff"/>' +
+    '<rect x="2.5" y="28.6" width="15" height="1.3" fill="#fff" fill-opacity=".45"/><circle cx="17.2" cy="30.6" r=".8" fill="#ffe08a"/>' +
+    '<circle cx="5.8" cy="33.3" r="2.7" fill="#1b2436"/><circle cx="5.8" cy="33.3" r="1.1" fill="#cfd5dd"/><circle cx="14.2" cy="33.3" r="2.7" fill="#1b2436"/><circle cx="14.2" cy="33.3" r="1.1" fill="#cfd5dd"/>' },
+  blob:{ n:'동글이', svg:'<ellipse cx="10" cy="37.6" rx="7" ry="1.6" fill="rgba(0,0,0,.25)"/>' +
+    '<ellipse cx="6.6" cy="36.4" rx="2.4" ry="1.3" ' + C + ' ' + OL + '/><ellipse cx="13.4" cy="36.4" rx="2.4" ry="1.3" ' + C + ' ' + OL + '/>' +
+    '<path d="M10 16c4.7 0 8.2 4.2 8.2 10.2 0 6.2-3.6 9.8-8.2 9.8s-8.2-3.6-8.2-9.8C1.8 20.2 5.3 16 10 16z" ' + C + ' ' + OL + '/>' +
+    '<ellipse cx="10" cy="30" rx="4.6" ry="4.6" fill="#fff" fill-opacity=".35"/><ellipse cx="6.2" cy="20.4" rx="1.3" ry="2" ' + HL + '/>' +
+    '<circle cx="7.4" cy="24.6" r="1.35" fill="#1b2436"/><circle cx="12.6" cy="24.6" r="1.35" fill="#1b2436"/><circle cx="7.8" cy="24.1" r=".45" fill="#fff"/><circle cx="13" cy="24.1" r=".45" fill="#fff"/>' +
+    '<path d="M8.6 27.4c.8.8 2 .8 2.8 0" stroke="#1b2436" stroke-width=".8" fill="none" stroke-linecap="round"/><circle cx="5.6" cy="27" r="1" fill="#ff8fa3" fill-opacity=".7"/><circle cx="14.4" cy="27" r="1" fill="#ff8fa3" fill-opacity=".7"/>' +
+    '<path d="M10 16c0-2 1-3.4 3-4-.2 2-1.2 3.4-3 4z" fill="#3fb36b"/><path d="M10 16c0-1.6-.8-2.8-2.4-3.2.1 1.6.9 2.7 2.4 3.2z" fill="#2f9a57"/>' }
+};
+var PAWN_KEYS = ['chess', 'plane', 'balloon', 'bag', 'car', 'blob'];
+var MIX = ['plane', 'balloon', 'bag', 'car'];
+function pawnKind(i){ var k = store.pawn || 'mix'; return k === 'mix' ? MIX[(G.players[i] ? G.players[i].color : i) % 4] : (PAWNS[k] ? k : 'chess'); }
+function pawnSvg(kind){ return '<svg viewBox="0 0 20 40" aria-hidden="true">' + PAWNS[kind].svg + '</svg>'; }
 var tokEls = [];
 function buildToks(){
   $('toks').innerHTML = ''; tokEls = [];
   G.players.forEach(function(p, i){
     var e = document.createElement('div'); e.className = 'tk'; e.style.setProperty('--c', pc(i));
-    e.innerHTML = '<span class="sh"></span><span class="pawn">' + PAWN + '</span>';
+    e.innerHTML = '<span class="sh"></span><span class="pawn">' + pawnSvg(pawnKind(i)) + '</span>';
     $('toks').appendChild(e); tokEls.push(e);
   });
   DP = G.players.map(function(p){ return p.pos; });
@@ -602,21 +647,29 @@ function bldSvg(lv){
   else if (lv === 4) g = '<path d="M3 34V10h24v24z" ' + wall + '/><path d="M2 10l13-7 13 7z" ' + roof + '/><text x="15" y="23" text-anchor="middle" font-size="10" font-weight="800" fill="#1b2436" font-family="sans-serif">H</text><path d="M12 34v-6h6v6" fill="#1b2436"/>';
   return '<svg viewBox="0 0 30 36" aria-hidden="true"><ellipse cx="15" cy="34.5" rx="14" ry="2.4" fill="rgba(10,20,40,.3)"/>' + g + '</svg>';
 }
+// 산 땅(건물 없음)에 꽂는 주인 깃발 — 이름 첫 글자
+function flagPin(ch){
+  return '<svg viewBox="0 0 30 36" aria-hidden="true"><ellipse cx="11" cy="34.5" rx="6" ry="1.6" fill="rgba(10,20,40,.3)"/><path d="M11 34V4" stroke="#1b2436" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="3.6" r="1.6" fill="#f2c94c" stroke="#1b2436" stroke-width=".6"/>' +
+    '<path d="M12 5h15l-3.4 6.5L27 18H12z" style="fill:var(--oc)" stroke="#1b2436" stroke-width=".9" stroke-linejoin="round"/>' +
+    '<text x="18.6" y="14.3" text-anchor="middle" font-size="8.4" font-weight="800" fill="#fff" font-family="sans-serif">' + esc(ch) + '</text></svg>';
+}
 var BL = {};
 function renderBlds(){
   if (!G) return;
   var box = $('blds');
   for (var i = 0; i < N; i++){
-    var lv = T[i].k === 'city' && G.own[i] >= 0 ? G.lv[i] : 0, key = lv ? lv + ':' + G.own[i] : '';
+    var o = G.own[i], lv = T[i].k === 'city' && o >= 0 ? G.lv[i] : 0;
+    var key = o >= 0 ? lv + ':' + o + ':' + G.players[o].name : '';
     var cur = BL[i];
     if ((cur ? cur.k : '') === key) continue;
     if (cur){ cur.el.remove(); delete BL[i]; }
-    if (!lv) continue;
-    var e = document.createElement('div'), xy = bandPos(i);
+    if (o < 0) continue;
+    var e = document.createElement('div'), xy = lv ? bandPos(i) : pinPos(i);
     e.className = 'bl' + (G.phase !== 'over' ? ' pop' : '');
     e.style.left = xy[0] + '%'; e.style.top = xy[1] + '%'; e.style.zIndex = Math.round(xy[1] * 10);
     e.style.setProperty('--oc', pc(G.own[i]));
-    e.innerHTML = '<span class="st">' + bldSvg(lv) + '</span>';
+    e.innerHTML = '<span class="st">' + (lv ? bldSvg(lv) : flagPin(Array.from(G.players[o].name)[0] || '?')) + '</span>';
+    if (!lv) e.classList.add('pin');
     box.appendChild(e);
     BL[i] = { k:key, el:e };
   }
@@ -733,7 +786,7 @@ function deedHTML(i, o){
 }
 // 땅을 사면 문서 카드가 뒤집혀 나타나고 도장이 찍힌 뒤 산 사람 쪽으로 날아감
 var deedSkip = null;
-function flyDeed(i, p){
+function flyDeed(i, p, from){
   return new Promise(function(res){
     var box = document.createElement('div');
     box.className = 'cardfx';
@@ -741,12 +794,17 @@ function flyDeed(i, p){
     document.body.appendChild(box);
     var card = box.firstChild, ended = false;
     card.style.setProperty('--oc', pc(p));
+    if (from != null){ // 인수: 원래 주인 도장이 찍힌 채로 시작
+      var old = document.createElement('div'); old.className = 'stamp'; old.textContent = G.players[from].name; old.style.setProperty('--oc', pc(from));
+      card.appendChild(old);
+      setTimeout(function(){ if (!ended) old.animate([{ opacity:.9 }, { opacity:0, transform:'rotate(-14deg) scale(.6)' }], { duration:ms(260), fill:'forwards' }); }, ms(380));
+    }
     var finish = function(){ if (ended) return; ended = true; box.remove(); deedSkip = null; var pp = $('pp' + p); if (pp){ pp.classList.remove('bump'); void pp.offsetWidth; pp.classList.add('bump'); } res(); };
     deedSkip = finish;
     card.animate([{ transform:'translate(-50%,-50%) rotateY(180deg) scale(.4)', opacity:0 }, { transform:'translate(-50%,-50%) rotateY(0) scale(1)', opacity:1 }], { duration:ms(450), easing:'cubic-bezier(.2,1.3,.4,1)', fill:'forwards' });
     setTimeout(function(){
       if (ended) return;
-      var st = document.createElement('div'); st.className = 'stamp'; st.textContent = G.players[p].name;
+      var st = document.createElement('div'); st.className = 'stamp'; st.textContent = (from != null ? '인수 ' : '') + G.players[p].name;
       card.appendChild(st);
       st.animate([{ transform:'rotate(-14deg) scale(2.4)', opacity:0 }, { transform:'rotate(-14deg) scale(1)', opacity:.88 }], { duration:ms(220), easing:'ease-in', fill:'forwards' });
       snd('stamp');
@@ -805,6 +863,11 @@ function renderAct(){
         main = '<button class="btn main grow" id="aOpen">' + (G.phase === 'buy' ? '땅 문서 보기' : '건물 고르기') + '</button>';
         decide = G.phase;
         break;
+      case 'takeover':
+        title += ' · 땅 인수'; msg = pn(G.pend.from) + ' 님의 ' + esc(T[G.pend.t].n) + '을(를) 웃돈 주고 가져올지 골라 주세요.';
+        main = '<button class="btn main grow" id="aOpen">인수 고르기</button>';
+        decide = 'takeover';
+        break;
       case 'toll':
         title += ' · 통행료'; msg = pn(G.pend.to) + ' 님의 ' + esc(tn(G.pend.t)) + ' 통행료 <b class="num">' + won(G.pend.a) + '</b>. 우대권을 쓰면 안 내도 돼요.';
         main = '<button class="btn gold grow" id="aVip">우대권 쓰기</button><button class="btn grow" id="aPay">그냥 내기</button>';
@@ -848,12 +911,17 @@ var DEC = { key:'', min:false, sel:0 };
 function closeDecide(){ var d = $('decide'); if (d.innerHTML){ d.innerHTML = ''; d.className = 'decide'; } }
 function renderDecide(){
   var d = $('decide');
-  if (!G || busy || !myTurn() || (G.phase !== 'buy' && G.phase !== 'build') || DEC.min){ closeDecide(); return; }
+  if (!G || busy || !myTurn() || ['buy', 'build', 'takeover'].indexOf(G.phase) < 0 || DEC.min){ closeDecide(); return; }
   var p = G.players[G.turn], i = G.pend.t, t = T[i], pl = placeOf(i), html = '';
   var timer = MODE === 'online' && NET.room && NET.room.deadline ? '<div class="timer" id="tline2"><i></i></div>' : '';
   var head = '<div class="dhead">' + (pl ? FLAGS.flag(pl[0], 'dflag') : '') + '<div><small>' + (t.k === 'city' ? SIDE_NAME[WT.sideOf(i)] : t.k === 'spot' ? '관광지' : '탈것') + (pl ? ' · ' + pl[1] : '') + '</small><b>' + esc(t.n) + '</b></div>' +
     '<button class="dmin" id="dMin" aria-label="잠깐 판 보기">판 보기</button></div>';
-  if (G.phase === 'buy'){
+  if (G.phase === 'takeover'){
+    var tk = G.pend, toll = WT.tollOf(G, i);
+    html = head + timer + '<div class="buyrow">' + deedHTML(i) + '<div class="bside"><p class="tkline">' + pn(tk.from) + ' 님 땅이에요. 땅값과 건물값의 <b>2배</b>를 주면 내 땅이 돼요.</p><dl class="offer"><dt>인수 값</dt><dd>' + won(tk.a) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - tk.a) + '</dd><dt>통행료</dt><dd>' + won(toll) + (t.k === 'city' && G.lv[i] ? ' · ' + WT.LV_NAME[G.lv[i]] : '') + '</dd></dl>' +
+      (t.k === 'city' ? '<p class="hint">가져오면 건물도 그대로 내 것, 바로 더 지을 수 있어요. 호텔은 인수할 수 없어요.</p>' : '<p class="hint">가져오면 다음부터 통행료를 내가 받아요.</p>') + '</div></div>' +
+      '<div class="row"><button class="btn red grow" id="dTake">인수하기 <small>' + won(tk.a) + '</small></button><button class="btn grow" id="dSkip">안 할래요</button></div>';
+  } else if (G.phase === 'buy'){
     var n = WT.owned(G, G.turn).length;
     html = head + timer + '<div class="buyrow">' + deedHTML(i, { stamp:false }) + '<div class="bside"><dl class="offer"><dt>땅값</dt><dd>' + won(t.p) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - t.p) + '</dd><dt>통행료</dt><dd>' + (t.k === 'city' ? won(t.t[0]) + ' ~ ' + won(t.t[4]) : won(t.t[0])) + '</dd><dt>내 카드</dt><dd>' + n + '장 → ' + (n + 1) + '장</dd></dl>' +
       (t.k === 'city' && !G.cfg.buildOnBuy ? '<p class="hint">건물은 다음에 다시 왔을 때 지을 수 있어요.</p>' : '') + '</div></div>' +
@@ -877,9 +945,10 @@ function renderDecide(){
   }
   var first = !d.innerHTML;
   d.className = 'decide' + (first ? ' in' : '');
-  d.innerHTML = '<div class="dpanel" role="dialog" aria-label="' + (G.phase === 'buy' ? '땅 사기' : '건물 짓기') + '">' + html + '</div>';
+  d.innerHTML = '<div class="dpanel" role="dialog" aria-label="' + ({ buy:'땅 사기', build:'건물 짓기', takeover:'땅 인수' })[G.phase] + '">' + html + '</div>';
   var on = function(id, f){ var e = d.querySelector('#' + id); if (e) e.onclick = f; };
   on('dBuy', function(){ closeDecide(); act({ type:'buy' }); });
+  on('dTake', function(){ closeDecide(); act({ type:'takeover' }); });
   on('dSkip', function(){ closeDecide(); act({ type:'skip' }); });
   on('dBuild', function(){ if (DEC.sel){ var lv = DEC.sel; closeDecide(); act({ type:'build', lv:lv }); } });
   on('dMin', function(){ DEC.min = true; closeDecide(); });
@@ -919,7 +988,8 @@ function say(e, g){
     case 'spaceport': return P(e.p) + ' 님이 우주 정거장에 왔어요. 다음 차례에 원하는 곳으로!';
     case 'fly': return P(e.p) + ' 님이 ' + tn(e.to) + '(으)로 날아가요';
     case 'cant': return P(e.p) + ' 님은 ' + tn(e.t) + '을(를) 살 돈이 모자라요';
-    case 'skip': return P(e.p) + ' 님이 ' + tn(e.t) + (e.ph === 'buy' ? '을(를) 사지 않았어요' : '에 짓지 않았어요');
+    case 'skip': return P(e.p) + ' 님이 ' + tn(e.t) + (e.ph === 'buy' ? '을(를) 사지 않았어요' : e.ph === 'takeover' ? '을(를) 인수하지 않았어요' : '에 짓지 않았어요');
+    case 'takeover': return P(e.p) + ' 님이 ' + P(e.from) + ' 님의 ' + tn(e.t) + '을(를) ' + won(e.a) + '에 인수했어요!';
     case 'vip': return P(e.p) + ' 님이 우대권으로 통행료 ' + won(e.a) + '을 아꼈어요';
     case 'sell': return P(e.p) + ' 님이 ' + tn(e.t) + (e.lv < 0 ? ' 땅을' : '의 건물을') + ' 은행에 팔았어요 (+' + won(e.a) + ')';
     case 'sellcard': return P(e.p) + ' 님이 무전기를 은행에 팔았어요 (+' + won(e.a) + ')';
@@ -1093,6 +1163,11 @@ async function play(g){
       case 'fly': setNews(line); await flyAnim(e.p, e.to, 800); break;
       case 'salary': money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); break;
       case 'key': setNews(line); await showKey(e.c, e.p); break;
+      case 'takeover':
+        money[e.p] -= e.a; money[e.from] += e.a; setMoney(e.p, money[e.p]); setMoney(e.from, money[e.from]);
+        floatAt(e.p, '−' + won(e.a)); floatAt(e.from, '+' + won(e.a), true); snd('buy'); setNews(line);
+        flashTile(e.t); G.own = G.own.slice(); G.own[e.t] = e.p; renderTiles();
+        await flyDeed(e.t, e.p, e.from); renderPeople(); money.forEach(function(v, i){ setMoney(i, v); }); break;
       case 'buy': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('buy'); setNews(line); G.own = G.own.slice(); G.own[e.t] = e.p; renderTiles(); await flyDeed(e.t, e.p); renderPeople(); money.forEach(function(v, i){ setMoney(i, v); }); break;
       case 'build': flashTile(e.t); money[e.p] -= e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '−' + won(e.a)); snd('build'); setNews(line); G.lv = G.lv.slice(); G.lv[e.t] = e.lv; renderTiles(); await wait(750); break;
       case 'toll': case 'spacefee': case 'gift':
@@ -1308,6 +1383,7 @@ function rulesBox(box, c, set, disabled){
   seg(box.querySelector('#rStart'), [[2000,'200만'],[2930,'293만 (원작)'],[5000,'500만']], c.start, function(v){ set('start', v); }, disabled);
   var sw = box.querySelector('#rSw');
   sw.appendChild(swRow('더블 세 번이면 무인도', '한 차례에 더블이 세 번 나오면 무인도로 가요', !!c.triple, function(){ set('triple', !c.triple); }, disabled));
+  sw.appendChild(swRow('땅 인수 (웃돈 2배)', '남의 땅에서 통행료를 낸 뒤, 땅값과 건물값의 2배를 주면 그 땅을 가져와요. 호텔은 못 가져가요', c.takeover !== false, function(){ set('takeover', c.takeover === false); }, disabled));
   sw.appendChild(swRow('산 차례에 바로 건물', '원작은 땅을 산 뒤 다시 왔을 때부터 지어요. 켜면 산 차례에도 지을 수 있어요', !!c.buildOnBuy, function(){ set('buildOnBuy', !c.buildOnBuy); }, disabled));
 }
 
@@ -1398,7 +1474,7 @@ function startLocal(tab){
       ps.push({ name:(s.name || '').trim() || (s.who === 'human' ? NAMES[j] : BOTS[j]), ai:s.who === 'human' ? null : s.who });
     }
   }
-  var cfg = lenToCfg(SU.cfg.len, { start:SU.cfg.start, triple:SU.cfg.triple, buildOnBuy:SU.cfg.buildOnBuy });
+  var cfg = lenToCfg(SU.cfg.len, { start:SU.cfg.start, triple:SU.cfg.triple, buildOnBuy:SU.cfg.buildOnBuy, takeover:SU.cfg.takeover !== false });
   var seed = Math.floor(rnd() * 4294967296);
   MODE = 'local'; DEMO = false;
   G = WT.newGame(ps, cfg, Math.floor(rnd() * ps.length), seed, Date.now());
@@ -1443,12 +1519,25 @@ function overSheet(){
   }
 }
 
+function pawnSheet(){
+  var cur = store.pawn || 'mix', cols = [0, 1, 2, 3];
+  var opt = function(k, name, kinds){
+    return '<button class="pawnopt' + (cur === k ? ' on' : '') + '" data-k="' + k + '"><span class="pv">' + cols.map(function(c, j){ return '<span class="pvi" style="--c:var(--p' + c + ')">' + pawnSvg(kinds[j]) + '</span>'; }).join('') + '</span><b>' + name + '</b></button>';
+  };
+  var html = '<h2>말 모양</h2><p class="lead">판 위에 서는 말의 모양을 골라요. 이 기기에서만 바뀌어요.</p><div class="pawnopts">' +
+    opt('mix', '섞어서 (사람마다 다르게)', MIX) + PAWN_KEYS.map(function(k){ return opt(k, PAWNS[k].n, [k, k, k, k]); }).join('') + '</div>' +
+    '<div class="btns"><button class="btn" id="pwClose">닫기</button></div>';
+  var sh = openSheet(html, 'pawn');
+  [].forEach.call(sh.querySelectorAll('.pawnopt'), function(b){ b.onclick = function(){ store.pawn = b.dataset.k; save(); if (G){ buildToks(); render(); } pawnSheet(); snd('step'); }; });
+  sh.querySelector('#pwClose').onclick = closeSheet;
+}
 function rulesSheet(){
   var html = '<h2>여행 규칙</h2><ol class="rules">' +
     '<li>주사위 두 개를 굴려 나온 합만큼 가요. 더블이면 한 번 더 굴려요.</li>' +
     '<li>출발을 지나거나 멈추면 월급 20만 원.</li>' +
     '<li>주인 없는 도시·관광지·탈것에 서면 살 수 있어요. 남의 땅에 서면 통행료를 내요.</li>' +
     '<li>내 도시에 다시 서면 별장(2채까지) → 빌딩 → 호텔로 키울 수 있어요. 높을수록 통행료가 커져요. 제주도·부산·서울과 탈것에는 건물을 짓지 못해요.</li>' +
+    '<li>땅 인수(설정): 남의 땅에서 통행료를 낸 뒤 땅값과 건물값의 2배를 주인에게 주면 그 땅을 가져와요. 호텔은 못 가져가요.</li>' +
     '<li>황금열쇠 칸에 서면 카드를 뽑아요. 무전기와 우대권은 갖고 있다가 써요.</li>' +
     '<li>무인도에 서면 세 번 갇혀요. 더블이 나오거나 무전기를 쓰면 나가요.</li>' +
     '<li>복지기금 내는 곳에서 15만 원을 내고, 받는 곳에 선 사람이 모인 돈을 다 가져가요.</li>' +
@@ -1464,6 +1553,7 @@ function menuSheet(){
   var html = '<h2>메뉴</h2><div class="btns col">' +
     (MODE === 'online' ? '<button class="btn" id="mInv">초대 링크 복사</button>' : '<button class="btn main" id="mNew">새 여행</button>') +
     '<button class="btn" id="mRules">규칙 보기</button>' +
+    '<button class="btn" id="mPawn">말 모양 바꾸기</button>' +
     '<button class="btn" id="mFlat">' + (store.flat ? '판 기울여 보기 (3D)' : '위에서 판 보기 (평면)') + '</button>' +
     '<button class="btn" id="mFast">' + (store.fast ? '움직임 보통 빠르기로' : '움직임 빠르게') + '</button>' +
     (MODE === 'online' ? '<button class="btn" id="mLeave">방 나가기</button>' : (SERVER ? '<button class="btn" id="mOn">온라인으로 하기</button>' : '')) +
@@ -1472,6 +1562,7 @@ function menuSheet(){
   var on = function(id, f){ var e = sh.querySelector('#' + id); if (e) e.onclick = f; };
   on('mNew', function(){ setupSheet(store.mode === 'local' ? 'local' : 'cpu'); });
   on('mRules', rulesSheet);
+  on('mPawn', pawnSheet);
   on('mFlat', function(){ store.flat = !store.flat; save(); applyFlat(); closeSheet(); });
   on('mFast', function(){ store.fast = !store.fast; SPEED = store.fast ? 0.55 : 1; save(); closeSheet(); toast(store.fast ? '움직임을 빠르게 했어요' : '보통 빠르기로 했어요'); });
   on('mOn', function(){ setupSheet('online'); });
@@ -1616,7 +1707,7 @@ function lobbySheet(){
   seg(sh.querySelector('#wN'), [[2,'2명'],[3,'3명'],[4,'4명']], n, function(v){ set('players', v); }, !host);
   seg(sh.querySelector('#wT'), [[0,'없음'],[15,'15초'],[20,'20초'],[30,'30초'],[60,'60초']], S.turnSec, function(v){ set('turnSec', v); }, !host);
   seg(sh.querySelector('#wAi'), [['easy','느긋한'],['normal','야무진']], S.ai, function(v){ set('ai', v); }, !host);
-  rulesBox(sh.querySelector('#wRules'), { len:cfgToLen(S), start:S.start, triple:S.triple, buildOnBuy:S.buildOnBuy }, function(k, v){
+  rulesBox(sh.querySelector('#wRules'), { len:cfgToLen(S), start:S.start, triple:S.triple, buildOnBuy:S.buildOnBuy, takeover:S.takeover !== false }, function(k, v){
     if (k === 'len'){ var c = lenToCfg(v, {}); NET.send({ t:'settings', settings:{ rounds:c.rounds, timeMin:c.timeMin } }); }
     else set(k, v);
   }, !host);

@@ -4,7 +4,7 @@ let pass = 0, fail = 0;
 function t(name, fn) { try { fn(); pass++; } catch (e) { fail++; console.log('✗', name, '\n ', e.message); } }
 function eq(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || '') + ' 기대 ' + JSON.stringify(b) + ' 실제 ' + JSON.stringify(a)); }
 function ok(c, m) { if (!c) throw new Error(m || '조건 실패'); }
-const g2 = (cfg) => W.newGame([{ name: 'A' }, { name: 'B' }], cfg, 0, 1);
+const g2 = (cfg) => W.newGame([{ name: 'A' }, { name: 'B' }], Object.assign({ takeover: false }, cfg), 0, 1);
 const roll = (g, a, b) => W.apply(g, { type: 'roll', d: [a, b] });
 const st = (g, fn) => { const c = W.clone(g); fn(c); return c; };
 
@@ -229,6 +229,40 @@ t('차례가 아닌 동작·잘못된 주사위는 무시', () => {
 t('남에게 보내는 화면은 황금열쇠 순서를 가림', () => {
   const v = W.viewFor(g2());
   eq(typeof v.deck, 'number'); eq(v.rs, 0);
+});
+
+t('땅 인수: 통행료를 내고 나서 2배 값에 가져올지 고름', () => {
+  let g = st(g2({ takeover: true }), (c) => { c.own[3] = 1; c.lv[3] = 2; });
+  g = roll(g, 1, 2);
+  eq(g.players[0].money, 2930 - 60); eq(g.phase, 'takeover'); eq(g.pend.a, 2 * (80 + 100));
+  g = W.apply(g, { type: 'takeover' });
+  eq(g.own[3], 0); eq(g.lv[3], 2); eq(g.players[0].money, 2930 - 60 - 360); eq(g.players[1].money, 2930 + 60 + 360);
+  eq(g.phase, 'build'); // 가져온 뒤 바로 더 지을 수 있음
+  g = W.apply(g, { type: 'skip' }); eq(g.turn, 1);
+});
+t('땅 인수: 안 하면 그냥 넘어감, 호텔·돈 모자람·설정 끔이면 안 물어봄', () => {
+  let g = W.apply(roll(st(g2({ takeover: true }), (c) => { c.own[3] = 1; }), 1, 2), { type: 'skip' });
+  eq(g.own[3], 1); eq(g.turn, 1);
+  g = roll(st(g2({ takeover: true }), (c) => { c.own[3] = 1; c.lv[3] = 4; }), 1, 2);
+  eq(g.turn, 1); eq(g.own[3], 1);
+  g = roll(st(g2({ takeover: true }), (c) => { c.own[3] = 1; c.players[0].money = 100; }), 1, 2);
+  eq(g.turn, 1);
+  g = roll(st(g2(), (c) => { c.own[3] = 1; }), 1, 2);
+  eq(g.turn, 1);
+});
+t('땅 인수: 관광지·탈것도, 우대권으로 통행료를 안 냈어도', () => {
+  let g = st(g2({ takeover: true }), (c) => { c.own[5] = 1; c.players[0].vip = 1; });
+  g = W.apply(roll(g, 2, 3), { type: 'toll', use: true });
+  eq(g.phase, 'takeover'); eq(g.pend.a, 400);
+  g = W.apply(g, { type: 'takeover' });
+  eq(g.own[5], 0); eq(g.turn, 1);
+});
+t('땅 인수 뒤 더블이면 한 번 더', () => {
+  let g = st(g2({ takeover: true }), (c) => { c.own[4] = 1; });
+  g = roll(g, 2, 2);
+  g = W.apply(g, { type: 'takeover' });
+  eq(g.phase, 'build'); g = W.apply(g, { type: 'skip' });
+  eq(g.turn, 0); eq(g.phase, 'roll');
 });
 
 console.log(`\n규칙 시험 ${pass}개 통과` + (fail ? `, ${fail}개 실패` : ''));

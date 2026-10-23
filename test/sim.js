@@ -44,3 +44,5 @@ match(['normal', 'easy', 'easy', 'easy'], {}, N);
 match(['normal', 'normal', 'normal', 'normal'], {}, N);
 match(['normal', 'easy'], { rounds: 15 }, N);
 match(['normal', 'normal', 'easy'], { start: 2000, triple: false, buildOnBuy: true }, N);
+match(['normal', 'easy'], { takeover: false }, N);
+match(['normal', 'normal', 'normal', 'normal'], { takeover: false }, N);

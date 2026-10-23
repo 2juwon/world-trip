@@ -43,7 +43,7 @@ const botName = (i) => BOTS[i];
 const die = () => 1 + (rand32() % 6);
 
 export const DEFAULT_SETTINGS = {
-  players: 2, start: 2930, triple: true, buildOnBuy: false, rounds: 20, timeMin: 0,
+  players: 2, start: 2930, triple: true, buildOnBuy: false, takeover: true, rounds: 20, timeMin: 0,
   turnSec: 30, ai: 'normal', public: false,
 };
 export function cleanSettings(cur, s, minPlayers) {
@@ -51,14 +51,14 @@ export function cleanSettings(cur, s, minPlayers) {
   if (!s || typeof s !== 'object') return out;
   if ([2, 3, 4].includes(s.players)) out.players = Math.max(s.players, minPlayers || 2);
   if ([2000, 2930, 5000].includes(s.start)) out.start = s.start;
-  for (const k of ['triple', 'buildOnBuy', 'public']) if (typeof s[k] === 'boolean') out[k] = s[k];
+  for (const k of ['triple', 'buildOnBuy', 'takeover', 'public']) if (typeof s[k] === 'boolean') out[k] = s[k];
   // 판 길이: 바퀴와 시간은 하나만
   if ([0, 10, 20, 30].includes(s.rounds) && [0, 20, 30, 45, 60].includes(s.timeMin)) { out.rounds = s.rounds; out.timeMin = s.rounds ? 0 : s.timeMin; }
   if (TURN_SECS.includes(s.turnSec)) out.turnSec = s.turnSec;
   if (['easy', 'normal'].includes(s.ai)) out.ai = s.ai;
   return out;
 }
-const cfgOf = (s) => ({ start: s.start, triple: s.triple, buildOnBuy: s.buildOnBuy, rounds: s.rounds, timeMin: s.timeMin });
+const cfgOf = (s) => ({ start: s.start, triple: s.triple, buildOnBuy: s.buildOnBuy, takeover: s.takeover !== false, rounds: s.rounds, timeMin: s.timeMin });
 
 // 화면 애니메이션이 끝날 때까지 걸리는 시간(대략) — 다음 동작은 이 뒤에
 export function animMs(log) {
@@ -71,6 +71,7 @@ export function animMs(log) {
       case 'fly': t += 850; break;
       case 'warp': t += 650; break;
       case 'buy': t += 1800; break;
+      case 'takeover': t += 2000; break;
       case 'build': t += 800; break;
       case 'toll': case 'spacefee': t += 850; break;
       case 'bankrupt': t += 1150; break;

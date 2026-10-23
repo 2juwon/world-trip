@@ -84,6 +84,15 @@
       case 'toll':
         return { type: 'toll', use: g.pend.a >= (level === 'easy' ? 0 : 60) };
 
+      case 'takeover': {
+        // 웃돈을 주고도 손에 쥘 돈이 남고, 통행료가 쏠쏠한 땅이면 가져옴
+        var ti = g.pend.t, price = g.pend.a, left = p.money - price;
+        if (level === 'easy') return { type: rng() < 0.3 && left >= 300 ? 'takeover' : 'skip' };
+        var toll = WT.tollOf(g, ti), worth = T[ti].k === 'city' ? T[ti].t[Math.min(4, g.lv[ti] + 1)] : T[ti].t[0];
+        if (left >= Math.max(res * 1.3, 300) && worth * 4 >= price) return { type: 'takeover' };
+        return { type: 'skip' };
+      }
+
       case 'pay': {
         if (p.esc > 0) return { type: 'sellCard' };
         var ord = WT.autoSellOrder(g, me);
