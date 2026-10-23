@@ -66,10 +66,10 @@ export function animMs(log) {
   for (const e of log || []) {
     switch (e.k) {
       case 'roll': t += 1000; break;
-      case 'move': t += 150 + (Math.abs(e.n) >= 40 ? 40 * 28 : Math.abs(e.n) * 115); break;
+      case 'move': t += 150 + (Math.abs(e.n) >= 40 ? 200 + 40 * 28 : 420 + Math.abs(e.n) * 120); break;
       case 'key': t += 3800; break;
-      case 'fly': t += 850; break;
-      case 'warp': t += 650; break;
+      case 'fly': t += 1200; break;
+      case 'warp': t += 950; break;
       case 'buy': t += 1800; break;
       case 'takeover': t += 2000; break;
       case 'build': t += 800; break;

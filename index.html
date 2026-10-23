@@ -327,6 +327,20 @@ button:disabled{cursor:default; opacity:.45}
 .bl.pin{width:3.4%; height:3.4%}
 .bl.pin .st{left:-10%; right:-30%; height:135%}
 .tile .own{display:none}
+
+/* 도착 핀 */
+.poi{position:absolute; width:7%; height:7%; transform:translate(-50%,-50%); transform-style:preserve-3d; pointer-events:none}
+.poi .st{position:absolute; left:-5%; right:-5%; bottom:50%; height:150%; transform-origin:50% 100%; transform:rotateX(calc(-1 * var(--tilt)))}
+.poi .st svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible; transform-origin:50% 100%; animation:pindrop .45s cubic-bezier(.3,1.5,.5,1) both}
+.poi .ring{position:absolute; inset:-30%; border-radius:50%; border:2px solid var(--c); animation:pinring 1.1s ease-out infinite; opacity:0}
+.poi .ring.r2{animation-delay:.55s}
+.poi.out .st svg{animation:pinout .25s ease-in forwards}
+.poi.out .ring{display:none}
+@keyframes pindrop{0%{transform:translateY(-260%) scale(.9); opacity:0} 60%{opacity:1} 100%{transform:none}}
+@keyframes pinout{to{transform:scale(0); opacity:0}}
+@keyframes pinring{0%{transform:scale(.4); opacity:.9} 100%{transform:scale(1.6); opacity:0}}
+.tile.dest{box-shadow:inset 0 0 0 3px var(--dc); animation:destglow 1s ease-in-out infinite}
+@keyframes destglow{50%{background:color-mix(in srgb, var(--dc) 30%, var(--paper))}}
 /* 기록 */
 .log{grid-area:log; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:10px 12px; font-size:12.5px; color:var(--ink-soft); max-height:220px; overflow:auto; min-width:0}
 .log h3{margin:0 0 6px; font-size:12px; letter-spacing:.08em; color:var(--ink)}
@@ -1362,7 +1376,29 @@ function tokPos(i, k, cnt){
   if (cnt > 1){ x += off[k][0]; y += off[k][1]; } else y += 0.6;
   return [x, y];
 }
-function pinPos(i){ var r = tileRect(i); return [r[0] + r[2] * 0.8, r[1] + r[3] * 0.16]; } // 주인 깃발: 칸 오른쪽 위 (이름을 안 가림)
+function pinPos(i){ var r = tileRect(i); return [r[0] + r[2] * 0.8, r[1] + r[3] * 0.16]; } // 도착할 칸에 꽂히는 지도 핀 (주사위가 멈추면 떨어져 꽂히고, 말이 도착하면 사라짐)
+function showPoi(to, p, n){
+  var e = document.createElement('div'), r = tileRect(to);
+  e.className = 'poi';
+  e.style.left = (r[0] + r[2] / 2) + '%'; e.style.top = (r[1] + r[3] / 2) + '%'; e.style.zIndex = 2000;
+  e.style.setProperty('--c', pc(p));
+  var label = n == null ? '' : n < 0 ? '−' + (-n) : (Math.abs(n) >= 40 ? '' : String(n));
+  e.innerHTML = '<span class="ring"></span><span class="ring r2"></span><span class="st"><svg viewBox="0 0 24 34" aria-hidden="true"><ellipse cx="12" cy="32.4" rx="4.2" ry="1.3" fill="rgba(10,20,40,.35)"/>' +
+    '<path d="M12 32C12 32 3 21 3 12a9 9 0 0 1 18 0c0 9-9 20-9 20z" style="fill:var(--c)" stroke="#fff" stroke-width="1.6"/>' +
+    '<circle cx="12" cy="12" r="5.6" fill="#fff"/>' + (label ? '<text x="12" y="15.2" text-anchor="middle" font-size="' + (label.length > 1 ? 7.4 : 8.6) + '" font-weight="800" font-family="sans-serif" style="fill:var(--c)">' + label + '</text>' : '<circle cx="12" cy="12" r="2.4" style="fill:var(--c)"/>') + '</svg></span>';
+  $('blds').appendChild(e);
+  var t = tileEls[to]; if (t){ t.classList.add('dest'); t.style.setProperty('--dc', pc(p)); }
+  snd('pin');
+  e._to = to;
+  return e;
+}
+function hidePoi(e){
+  if (!e) return;
+  var t = tileEls[e._to]; if (t) t.classList.remove('dest');
+  e.classList.add('out');
+  setTimeout(function(){ e.remove(); }, 260);
+}
+// 주인 깃발: 칸 오른쪽 위 (이름을 안 가림)
 function bandPos(i){ // 건물이 설 자리 = 띠 위
   var r = tileRect(i), b = bandSide(i);
   if (b === 'b-top') return [r[0] + r[2] / 2, r[1] + r[3] * 0.12];
@@ -1952,11 +1988,14 @@ async function play(g){
     if (line && e.k !== 'roll') logLine(line);
     switch (e.k){
       case 'roll': setNews(line); logLine(line); await rollAnim(e.d); await wait(150); break;
-      case 'move':
+      case 'move': {
         if (Math.abs(e.n) >= 40){ setNews(pn2(g, e.p) + ' 세계일주!'); }
-        await stepAnim(e.p, e.from, e.n); await wait(120); break;
-      case 'warp': await flyAnim(e.p, e.to, 600); break;
-      case 'fly': setNews(line); await flyAnim(e.p, e.to, 800); break;
+        var pin = showPoi(e.to, e.p, e.n);
+        await wait(Math.abs(e.n) >= 40 ? 200 : 420);
+        await stepAnim(e.p, e.from, e.n); hidePoi(pin); await wait(120); break;
+      }
+      case 'warp': { var pin2 = showPoi(e.to, e.p); await wait(300); await flyAnim(e.p, e.to, 600); hidePoi(pin2); break; }
+      case 'fly': { setNews(line); var pin3 = showPoi(e.to, e.p); await wait(350); await flyAnim(e.p, e.to, 800); hidePoi(pin3); break; }
       case 'salary': money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); break;
       case 'key': setNews(line); await showKey(e.c, e.p); break;
       case 'takeover':
@@ -2545,6 +2584,7 @@ function snd(k){
       case 'sad': tone(330, .2, 'triangle', .1); tone(262, .35, 'triangle', .1, .18); break;
       case 'clack': tone(900 + Math.random() * 300, .03, 'square', .05); tone(200, .05, 'triangle', .12); break;
       case 'flip': tone(500, .05, 'triangle', .06); tone(800, .06, 'triangle', .05, .06); break;
+      case 'pin': tone(1320, .06, 'sine', .06); tone(990, .1, 'sine', .05, .07); break;
       case 'stamp': tone(120, .12, 'square', .12); tone(80, .2, 'triangle', .2, .02); break;
       case 'card': tone(1400, .05, 'sine', .05); tone(1800, .08, 'sine', .04, .04); break;
       case 'turn': tone(880, .09, 'sine', .08); tone(1175, .14, 'sine', .08, .09); break;
