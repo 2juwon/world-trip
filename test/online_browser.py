@@ -15,9 +15,10 @@ AUTO = """() => {
   if (b('aBack')) { b('aBack').click(); return; }
   if (!myTurn() || NET.pending) return;
   if (G.phase === 'space') { if (SEL < 0) document.querySelector('.tile[data-i="0"]').click(); b('aFly') && b('aFly').click(); return; }
-  if (G.phase === 'build') { const o = document.querySelector('[data-lv]:not([disabled])'); (o || b('aSkip')).click(); return; }
-  for (const id of ['aRoll', 'aBuy', 'aVip', 'aAuto']) { const e = b(id); if (e && !e.disabled) { e.click(); return; } }
-  const s = b('aSkip'); if (s) s.click();
+  if (G.phase === 'build') { const o = document.querySelector('#decide .bopt:not([disabled])'); if (o && !DEC.sel) o.click(); const bb = b('dBuild'); (bb && !bb.disabled ? bb : b('dSkip')).click(); return; }
+  if (G.phase === 'buy') { const e = b('dBuy'); if (e) { e.click(); return; } }
+  for (const id of ['aRoll', 'aVip', 'aAuto']) { const e = b(id); if (e && !e.disabled) { e.click(); return; } }
+  const s = b('dSkip'); if (s) s.click();
 }"""
 
 def pump(pages, cond, limit):

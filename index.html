@@ -270,6 +270,51 @@ button:disabled{cursor:default; opacity:.45}
 .timer i{display:block; height:100%; background:var(--air-blue); transform-origin:left}
 .timer.hurry i{background:var(--air-red)}
 
+
+.act h2{min-height:22px}
+.act .msg{min-height:2.9em; display:flex; align-items:center}
+.act .row{flex-wrap:nowrap; min-height:46px}
+.act .row + .row{min-height:38px}
+.act .timer.off{visibility:hidden}
+.btn.wait{background:transparent; border-style:dashed; color:var(--ink-soft); opacity:1}
+.btn.slim{min-height:38px; padding:6px 12px; font-size:13.5px}
+.slimgap{display:block; height:38px}
+.pp .nm, .pp .tags{flex-wrap:nowrap; white-space:nowrap; overflow:hidden}
+.pp .tags{height:16px; min-height:0}
+.pp .money{height:1.35em; line-height:1.35em}
+/* 고르는 창 */
+.decide{position:fixed; left:0; right:0; bottom:0; z-index:40; display:grid; justify-items:center; pointer-events:none}
+.decide .dpanel{pointer-events:auto; width:min(100%, 560px); box-sizing:border-box; background:var(--panel); border:1px solid var(--panel-line); border-bottom:0; border-radius:18px 18px 0 0; box-shadow:0 -10px 40px rgba(10,20,40,.28);
+  padding:14px max(16px, env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left,0px)); display:grid; gap:10px; max-height:72vh; overflow:auto}
+.decide.in .dpanel{animation:slideup .28s cubic-bezier(.2,.9,.3,1)}
+@keyframes slideup{from{transform:translateY(100%)}}
+.dhead{display:flex; align-items:center; gap:10px}
+.dhead > div{flex:1; min-width:0; display:grid}
+.dhead small{font-size:12px; color:var(--ink-soft); font-weight:700}
+.dhead b{font-family:var(--f-display); font-weight:400; font-size:24px; line-height:1.1}
+.dflag{width:42px; height:28px; border-radius:4px; box-shadow:0 0 0 1px rgba(0,0,0,.15); flex:none}
+.dmin{border:1px solid var(--panel-line); background:var(--paper-2); border-radius:10px; padding:7px 10px; font-size:12.5px; font-weight:700; flex:none}
+.bside{display:grid; gap:6px; min-width:0}
+.dpanel .row{display:flex; gap:8px}
+.dnow{margin:0; font-size:13.5px; color:var(--ink-soft)} .dnow b{color:var(--ink)}
+.dres{margin:0; font-size:13.5px; min-height:1.4em} .dres b{color:var(--air-blue)}
+.bopts{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px}
+.bopt{position:relative; border:1.5px solid var(--panel-line); background:var(--paper-2); border-radius:14px; padding:8px 4px 8px; display:grid; justify-items:center; gap:3px; min-width:0; transition:transform .12s, box-shadow .12s}
+.bopt .bpic{width:70%; aspect-ratio:30/36; display:block}
+.bopt .bpic svg{width:100%; height:100%; overflow:visible}
+.bopt .bname{font-weight:800; font-size:13px; white-space:nowrap}
+.bopt .btoll{font-family:var(--f-num); font-weight:600; font-size:15px; display:grid; justify-items:center; line-height:1.1}
+.bopt .btoll small{font-family:var(--f-body); font-size:10.5px; font-weight:600; color:var(--ink-soft)}
+.bopt .bst{font-family:var(--f-num); font-size:11.5px; font-weight:600; padding:2px 6px; border-radius:7px; background:var(--panel); white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis}
+.bopt .bst.ok{background:var(--ok); color:#fff; font-family:var(--f-body)}
+.bopt .bst.no{color:var(--air-red); font-family:var(--f-body); font-size:10.5px}
+.bopt:disabled{opacity:1}
+.bopt.done{border-style:dashed; background:color-mix(in srgb, var(--ok) 10%, var(--paper-2))}
+.bopt.done .bpic, .bopt:disabled:not(.done) .bpic{opacity:.45}
+.bopt:not(:disabled):hover{transform:translateY(-2px)}
+.bopt.on{border-color:var(--air-blue); box-shadow:0 0 0 2px var(--air-blue), 0 8px 18px rgba(35,72,154,.2); background:color-mix(in srgb, var(--air-blue) 8%, var(--panel)); transform:translateY(-2px)}
+.bopt.on::after{content:"✓"; position:absolute; top:-8px; right:-6px; width:20px; height:20px; border-radius:50%; background:var(--air-blue); color:#fff; font-size:12px; font-weight:800; display:grid; place-items:center}
+
 /* 기록 */
 .log{grid-area:log; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:10px 12px; font-size:12.5px; color:var(--ink-soft); max-height:220px; overflow:auto; min-width:0}
 .log h3{margin:0 0 6px; font-size:12px; letter-spacing:.08em; color:var(--ink)}
@@ -369,6 +414,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
   <div class="act" id="act"></div>
   <div class="log" id="log"><h3>여행 기록</h3><ol id="logl"></ol></div>
 </div>
+<div class="decide" id="decide"></div>
 <div id="sheets"></div>
 <div class="toast" id="toast" role="status"></div>
 <canvas class="confetti" id="fx" hidden></canvas>
@@ -1482,88 +1528,124 @@ function flyDeed(i, p){
 
 // ── 할 일 ──
 function renderAct(){
-  var box = $('act'), html = '';
-  if (!G){ box.innerHTML = ''; return; }
+  var box = $('act');
+  if (!G){ box.innerHTML = ''; closeDecide(); return; }
   var p = G.players[G.turn], col = pc(G.turn);
-  var head = function(t){ return '<h2 style="--c:' + col + '"><span class="dot"></span>' + t + '</h2>'; };
-  var timerBar = MODE === 'online' && NET.room && NET.room.deadline && G.phase !== 'over' ? '<div class="timer" id="tline"><i></i></div>' : '';
+  var me = meIndex(), meOk = me >= 0 && G.players[me] && !G.players[me].out;
+  var title = '', msg = '', main = '', sub = '', decide = '';
+  var mineLabel = MODE === 'online' || G.players.filter(function(x){ return !x.ai; }).length === 1 ? '내 차례' : esc(p.name) + ' 차례';
+  var wait = function(t){ return '<button class="btn grow wait" disabled>' + t + '</button>'; };
+  var album = meOk ? '<button class="btn grow slim" id="aMy">내 카드첩 · ' + WT.owned(G, me).length + '장' + (G.players[me].esc ? ' · 무전기' : '') + (G.players[me].vip ? ' · 우대권' : '') + '</button>' : '';
   if (G.phase === 'over'){
-    html = head('여행 끝') + '<p>' + pn(G.winner) + ' 님이 1등이에요.</p><div class="row"><button class="btn main grow" id="aOver">결과 보기</button></div>';
+    title = '여행 끝'; msg = pn(G.winner) + ' 님이 1등이에요.';
+    main = '<button class="btn main grow" id="aOver">결과 보기</button>';
   } else if (busy){
-    html = head(esc(p.name) + ' 차례') + '<p>이동하는 중…</p>';
+    title = esc(p.name) + ' 차례'; msg = esc(p.name) + ' 님이 여행하는 중…';
+    main = wait(myTurn() ? '움직이는 중…' : esc(p.name) + ' 님 차례예요');
   } else if (MODE === 'online' && G.turn === NET.seat && isAway(NET.seat)){
-    html = head('자리 비움') + '<p>시간이 두 번 지나서 컴퓨터가 대신 두고 있어요.</p><div class="row"><button class="btn main grow" id="aBack">돌아왔어요</button></div>';
+    title = '자리 비움'; msg = '시간이 두 번 지나서 컴퓨터가 대신 두고 있어요.';
+    main = '<button class="btn main grow" id="aBack">돌아왔어요</button>';
   } else if (!myTurn()){
-    var who = p.ai || (MODE === 'online' && NET.room && NET.room.seats[G.turn] && NET.room.seats[G.turn].kind === 'bot') ? '컴퓨터가 생각하는 중…' : esc(p.name) + ' 님을 기다리는 중…';
-    html = head(esc(p.name) + ' 차례') + timerBar + '<p>' + who + '</p>' + myStuffBtn();
+    var bot = p.ai || (MODE === 'online' && NET.room && NET.room.seats[G.turn] && NET.room.seats[G.turn].kind === 'bot');
+    title = esc(p.name) + ' 차례'; msg = bot ? '컴퓨터가 생각하는 중…' : esc(p.name) + ' 님을 기다리는 중…';
+    main = wait(esc(p.name) + ' 님 차례예요');
   } else {
-    var mine = MODE === 'online' || G.players.filter(function(x){ return !x.ai; }).length === 1 ? '내 차례' : esc(p.name) + ' 차례';
+    title = mineLabel;
     switch (G.phase){
       case 'roll':
-        if (p.isl > 0){
-          html = head(mine + ' · 무인도') + timerBar + '<p>더블이 나오면 바로 나가요. 앞으로 ' + p.isl + '번 갇혀 있어요.</p>' +
-            '<div class="row"><button class="btn main grow" id="aRoll">주사위 굴리기</button>' + (p.esc ? '<button class="btn gold" id="aEsc">무전기 쓰기</button>' : '') + '</div>';
-        } else {
-          html = head(mine) + timerBar + (G.again ? '<p>더블! 한 번 더 굴려요.</p>' : '') +
-            '<div class="row"><button class="btn main grow" id="aRoll">주사위 굴리기</button></div>';
-        }
-        html += myStuffBtn();
+        if (p.isl > 0){ title += ' · 무인도'; msg = '더블이 나오면 바로 나가요. 앞으로 ' + p.isl + '번 갇혀 있어요.'; }
+        else msg = G.again ? '더블! 한 번 더 굴려요.' : '주사위를 굴려 여행을 떠나요.';
+        main = '<button class="btn main grow" id="aRoll">주사위 굴리기</button>' + (p.isl > 0 && p.esc ? '<button class="btn gold" id="aEsc">무전기 쓰기</button>' : '');
         break;
       case 'space':
-        html = head(mine + ' · 우주여행') + timerBar + '<p>판에서 가고 싶은 칸을 누르세요. 출발을 지나면 월급을 받아요.</p>' +
-          '<div class="row"><button class="btn main grow" id="aFly"' + (SEL < 0 ? ' disabled' : '') + '>' + (SEL < 0 ? '칸을 고르세요' : esc(tn(SEL)) + '(으)로 날아가기') + '</button></div>';
+        title += ' · 우주여행'; msg = '판에서 가고 싶은 칸을 누르세요. 출발을 지나면 월급을 받아요.';
+        main = '<button class="btn main grow" id="aFly"' + (SEL < 0 ? ' disabled' : '') + '>' + (SEL < 0 ? '칸을 고르세요' : esc(tn(SEL)) + '(으)로 날아가기') + '</button>';
         break;
-      case 'buy': {
-        var i = G.pend.t, t = T[i];
-        html = head(mine + ' · ' + esc(t.n) + ' 살까요?') + timerBar + '<div class="buyrow">' + deedHTML(i) + '<div style="display:grid;gap:8px;min-width:0"><dl class="offer"><dt>땅값</dt><dd>' + won(t.p) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - t.p) + '</dd><dt>내 카드</dt><dd>' + WT.owned(G, G.turn).length + '장 → ' + (WT.owned(G, G.turn).length + 1) + '장</dd></dl>' +
-          (t.k === 'city' && !G.cfg.buildOnBuy ? '<p>건물은 다음에 다시 왔을 때 지을 수 있어요.</p>' : '') + '</div></div>' +
-          '<div class="row"><button class="btn main grow" id="aBuy">사기 <small>' + won(t.p) + '</small></button><button class="btn grow" id="aSkip">안 사기</button></div>';
+      case 'buy': case 'build':
+        title += ' · ' + esc(T[G.pend.t].n);
+        msg = G.phase === 'buy' ? esc(T[G.pend.t].n) + '을(를) 살지 골라 주세요.' : esc(T[G.pend.t].n) + '에 지을 건물을 골라 주세요.';
+        main = '<button class="btn main grow" id="aOpen">' + (G.phase === 'buy' ? '땅 문서 보기' : '건물 고르기') + '</button>';
+        decide = G.phase;
         break;
-      }
-      case 'build': {
-        var j = G.pend.t, cur = G.lv[j], opts = '';
-        for (var lv = cur + 1; lv <= 4; lv++){
-          var cost = WT.buildValue(j, lv) - WT.buildValue(j, cur);
-          opts += '<button class="btn opt" data-lv="' + lv + '"' + (p.money < cost ? ' disabled' : '') + '><span>' + WT.LV_NAME[lv] + (lv > cur + 1 && cur ? '까지' : '') + '</span><span>' + won(cost) + ' · 통행료 ' + won(T[j].t[lv]) + '</span></button>';
-        }
-        html = head(mine + ' · ' + esc(T[j].n) + '에 짓기') + timerBar + '<p>지금 ' + WT.LV_NAME[cur] + ', 통행료 ' + won(T[j].t[cur]) + '. 내 돈 ' + won(p.money) + '</p>' +
-          '<div class="opts">' + opts + '</div><div class="row"><button class="btn grow" id="aSkip">안 짓기</button></div>';
-        break;
-      }
       case 'toll':
-        html = head(mine + ' · 통행료') + timerBar + '<p>' + pn(G.pend.to) + ' 님의 ' + esc(tn(G.pend.t)) + ' 통행료 <b class="num">' + won(G.pend.a) + '</b>. 우대권을 쓰면 안 내도 돼요.</p>' +
-          '<div class="row"><button class="btn gold grow" id="aVip">우대권 쓰기</button><button class="btn grow" id="aPay">그냥 내기</button></div>';
+        title += ' · 통행료'; msg = pn(G.pend.to) + ' 님의 ' + esc(tn(G.pend.t)) + ' 통행료 <b class="num">' + won(G.pend.a) + '</b>. 우대권을 쓰면 안 내도 돼요.';
+        main = '<button class="btn gold grow" id="aVip">우대권 쓰기</button><button class="btn grow" id="aPay">그냥 내기</button>';
         break;
-      case 'pay': {
-        var short = G.pend.a - p.money;
-        html = head(mine + ' · 돈이 모자라요') + timerBar + '<p><b class="num">' + won(G.pend.a) + '</b>을 내야 하는데 현금이 ' + won(p.money) + '이에요. 땅이나 건물을 은행에 반값에 팔아 ' + won(short) + '을 더 마련하세요.</p>' +
-          '<div class="row"><button class="btn main grow" id="aAuto">알아서 팔기</button><button class="btn grow" id="aMine">팔 것 고르기</button></div>' +
-          '<div class="row"><button class="btn red grow" id="aBank">파산하기</button></div>';
+      case 'pay':
+        title += ' · 돈이 모자라요'; msg = '<b class="num">' + won(G.pend.a) + '</b>을 내야 해요. 현금 ' + won(p.money) + ' — 은행에 반값에 팔아 ' + won(G.pend.a - p.money) + '을 마련하세요.';
+        main = '<button class="btn main grow" id="aAuto">알아서 팔기</button><button class="btn grow" id="aMine">팔 것 고르기</button>';
+        sub = '<button class="btn red grow slim" id="aBank">파산하기</button>';
         break;
-      }
     }
   }
-  box.innerHTML = html;
+  var timer = MODE === 'online' && NET.room && NET.room.deadline && G.phase !== 'over';
+  box.innerHTML = '<h2 style="--c:' + col + '"><span class="dot"></span>' + title + '</h2>' +
+    '<div class="timer' + (timer ? '' : ' off') + '" id="tline"><i></i></div>' +
+    '<p class="msg">' + msg + '</p><div class="row">' + main + '</div><div class="row">' + (sub || album || '<span class="slimgap"></span>') + '</div>';
   var on = function(id, f){ var e = box.querySelector('#' + id); if (e) e.onclick = f; };
   on('aRoll', function(){ act({ type:'roll' }); });
   on('aEsc', function(){ act({ type:'escape' }); });
   on('aFly', function(){ if (SEL >= 0) act({ type:'space', to:SEL }); });
-  on('aBuy', function(){ act({ type:'buy' }); });
-  on('aSkip', function(){ act({ type:'skip' }); });
   on('aVip', function(){ act({ type:'toll', use:true }); });
   on('aPay', function(){ act({ type:'toll', use:false }); });
   on('aAuto', autoSell);
   on('aMine', propsSheet);
-  on('aMy', propsSheet);
+  on('aMy', function(){ albumSheet(me); });
   on('aOver', overSheet);
   on('aBack', function(){ NET.send({ t:'back' }); });
+  on('aOpen', function(){ DEC.min = false; renderDecide(); });
   var bank = box.querySelector('#aBank');
   if (bank) bank.onclick = function(){
     if (bank.dataset.arm){ act({ type:'bankrupt' }); return; }
     bank.dataset.arm = 1; bank.textContent = '정말 파산할까요? 한 번 더 누르세요';
     setTimeout(function(){ if (bank.isConnected){ delete bank.dataset.arm; bank.textContent = '파산하기'; } }, 3000);
   };
-  [].forEach.call(box.querySelectorAll('[data-lv]'), function(b){ b.onclick = function(){ act({ type:'build', lv:+b.dataset.lv }); }; });
+  if (decide){ var key = G.seq + ':' + decide; if (DEC.key !== key){ DEC.key = key; DEC.min = false; DEC.sel = 0; } renderDecide(); }
+  else closeDecide();
+  updateTimer();
+}
+
+// ── 살지·지을지 고르는 창 (판 아래쪽에서 올라옴, 판은 그대로 보임) ──
+var DEC = { key:'', min:false, sel:0 };
+function closeDecide(){ var d = $('decide'); if (d.innerHTML){ d.innerHTML = ''; d.className = 'decide'; } }
+function renderDecide(){
+  var d = $('decide');
+  if (!G || busy || !myTurn() || (G.phase !== 'buy' && G.phase !== 'build') || DEC.min){ closeDecide(); return; }
+  var p = G.players[G.turn], i = G.pend.t, t = T[i], pl = placeOf(i), html = '';
+  var timer = MODE === 'online' && NET.room && NET.room.deadline ? '<div class="timer" id="tline2"><i></i></div>' : '';
+  var head = '<div class="dhead">' + (pl ? FLAGS.flag(pl[0], 'dflag') : '') + '<div><small>' + (t.k === 'city' ? SIDE_NAME[WT.sideOf(i)] : t.k === 'spot' ? '관광지' : '탈것') + (pl ? ' · ' + pl[1] : '') + '</small><b>' + esc(t.n) + '</b></div>' +
+    '<button class="dmin" id="dMin" aria-label="잠깐 판 보기">판 보기</button></div>';
+  if (G.phase === 'buy'){
+    var n = WT.owned(G, G.turn).length;
+    html = head + timer + '<div class="buyrow">' + deedHTML(i, { stamp:false }) + '<div class="bside"><dl class="offer"><dt>땅값</dt><dd>' + won(t.p) + '</dd><dt>내 돈</dt><dd>' + won(p.money) + ' → ' + won(p.money - t.p) + '</dd><dt>통행료</dt><dd>' + (t.k === 'city' ? won(t.t[0]) + ' ~ ' + won(t.t[4]) : won(t.t[0])) + '</dd><dt>내 카드</dt><dd>' + n + '장 → ' + (n + 1) + '장</dd></dl>' +
+      (t.k === 'city' && !G.cfg.buildOnBuy ? '<p class="hint">건물은 다음에 다시 왔을 때 지을 수 있어요.</p>' : '') + '</div></div>' +
+      '<div class="row"><button class="btn main grow" id="dBuy">사기 <small>' + won(t.p) + '</small></button><button class="btn grow" id="dSkip">안 사기</button></div>';
+  } else {
+    var cur = G.lv[i];
+    if (!DEC.sel){ for (var l = cur + 1; l <= 4; l++) if (p.money >= WT.buildValue(i, l) - WT.buildValue(i, cur)) { DEC.sel = l; break; } }
+    var cards = '';
+    for (var lv = 1; lv <= 4; lv++){
+      var cost = WT.buildValue(i, lv) - WT.buildValue(i, cur), done = lv <= cur, can = !done && p.money >= cost;
+      var st = done ? '<span class="bst ok">지어 둠</span>' : can ? '<span class="bst">+' + won(cost) + '</span>' : '<span class="bst no">돈 부족 · ' + won(cost) + '</span>';
+      cards += '<button class="bopt' + (done ? ' done' : '') + (DEC.sel === lv ? ' on' : '') + '" data-lv="' + lv + '"' + (can ? '' : ' disabled') + ' style="--oc:' + pc(G.turn) + '">' +
+        '<span class="bpic">' + bldSvg(lv) + '</span><span class="bname">' + WT.LV_NAME[lv] + '</span><span class="btoll"><small>통행료</small>' + won(t.t[lv]) + '</span>' + st + '</button>';
+    }
+    var selCost = DEC.sel ? WT.buildValue(i, DEC.sel) - WT.buildValue(i, cur) : 0;
+    html = head + timer +
+      '<p class="dnow">지금 <b>' + (cur ? WT.LV_NAME[cur] : '빈 땅') + '</b> · 통행료 <b class="num">' + won(t.t[cur]) + '</b> · 내 돈 <b class="num">' + won(p.money) + '</b></p>' +
+      '<div class="bopts">' + cards + '</div>' +
+      '<p class="dres">' + (DEC.sel ? '<b>' + WT.LV_NAME[DEC.sel] + '</b>까지 지으면 통행료 <b class="num">' + won(t.t[cur]) + ' → ' + won(t.t[DEC.sel]) + '</b> · 남는 돈 <b class="num">' + won(p.money - selCost) + '</b>' : '지을 수 있는 건물이 없어요.') + '</p>' +
+      '<div class="row"><button class="btn main grow" id="dBuild"' + (DEC.sel ? '' : ' disabled') + '>' + (DEC.sel ? WT.LV_NAME[DEC.sel] + ' 짓기 <small>' + won(selCost) + '</small>' : '짓기') + '</button><button class="btn grow" id="dSkip">안 짓기</button></div>';
+  }
+  var first = !d.innerHTML;
+  d.className = 'decide' + (first ? ' in' : '');
+  d.innerHTML = '<div class="dpanel" role="dialog" aria-label="' + (G.phase === 'buy' ? '땅 사기' : '건물 짓기') + '">' + html + '</div>';
+  var on = function(id, f){ var e = d.querySelector('#' + id); if (e) e.onclick = f; };
+  on('dBuy', function(){ closeDecide(); act({ type:'buy' }); });
+  on('dSkip', function(){ closeDecide(); act({ type:'skip' }); });
+  on('dBuild', function(){ if (DEC.sel){ var lv = DEC.sel; closeDecide(); act({ type:'build', lv:lv }); } });
+  on('dMin', function(){ DEC.min = true; closeDecide(); });
+  [].forEach.call(d.querySelectorAll('.bopt'), function(b){ b.onclick = function(){ DEC.sel = +b.dataset.lv; snd('step'); renderDecide(); }; });
   updateTimer();
 }
 function myStuffBtn(){
@@ -1873,11 +1955,11 @@ function updateClock(){
 }
 function updateTimer(){
   var R = NET.room;
-  var line = $('tline'), bar = $('tbar');
+  var line = $('tline'), line2 = $('tline2'), bar = $('tbar');
   if (!(MODE === 'online' && R && R.deadline && G && G.phase !== 'over')) return;
   var now = Date.now() + (NET.off || 0), tot = R.turnSec * 1000, left = Math.max(0, R.deadline - now);
   var f = Math.min(1, left / tot);
-  if (line){ line.querySelector('i').style.transform = 'scaleX(' + f + ')'; line.classList.toggle('hurry', left < 5000); }
+  [line, line2].forEach(function(l){ if (l){ l.querySelector('i').style.transform = 'scaleX(' + f + ')'; l.classList.toggle('hurry', left < 5000); } });
   if (bar) bar.style.transform = 'scaleX(' + f + ')';
   if (myTurn() && left < 5000 && left > 0){ var sec = Math.ceil(left / 1000); if (sec !== NET.beep){ NET.beep = sec; snd('beep'); } }
 }
