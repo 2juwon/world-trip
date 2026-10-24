@@ -62,8 +62,11 @@ const cfgOf = (s) => ({ start: s.start, triple: s.triple, buildOnBuy: s.buildOnB
 
 // 화면 애니메이션이 끝날 때까지 걸리는 시간(대략) — 다음 동작은 이 뒤에
 export function animMs(log) {
-  let t = 0;
+  let t = 0, prev = null;
   for (const e of log || []) {
+    const afterFly = prev && prev.k === 'fly';
+    prev = e;
+    if (e.k === 'move' && afterFly) continue; // 화면은 우주여행 뒤 걷지 않음
     switch (e.k) {
       case 'roll': t += 1000; break;
       case 'move': t += 150 + (Math.abs(e.n) >= 40 ? 200 + 40 * 28 : 420 + Math.abs(e.n) * 120); break;

@@ -1396,6 +1396,8 @@ async function play(g){
     switch (e.k){
       case 'roll': setNews(line); logLine(line); await rollAnim(e.d); await wait(150); break;
       case 'move': {
+        // 우주여행은 이미 날아가서 도착했으니 걷는 동작은 건너뜀
+        if (k > 0 && evs[k - 1].k === 'fly' && evs[k - 1].p === e.p){ DP[e.p] = e.to; placeToks(); break; }
         if (Math.abs(e.n) >= 40){ setNews(pn2(g, e.p) + ' 세계일주!'); }
         var pin = showPoi(e.to, e.p, e.n);
         await wait(Math.abs(e.n) >= 40 ? 200 : 420);
