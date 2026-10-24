@@ -270,5 +270,28 @@ t('땅 인수: 호텔이 있는 땅은 3배, 가져오면 짓기 없이 넘어�
   eq(g.own[3], 0); eq(g.lv[3], 4); eq(g.players[0].money, 2930 - 450 - 990); eq(g.turn, 1);
 });
 
+t('한꺼번에 팔기: 여러 칸·여러 단계를 한 번에, 다 모이면 바로 갚음', () => {
+  let g = st(g2(), (c) => { c.own[3] = 1; c.lv[3] = 4; c.players[0].money = 100; c.own[1] = 0; c.lv[1] = 3; c.own[39] = 0; });
+  g = roll(g, 1, 2);
+  eq(g.phase, 'pay'); eq(g.pend.a, 450);
+  g = W.apply(g, { type: 'sellMany', steps: [1, 1, 39] }); // 빌딩→별장2 반값 25 + 별장2→1 25 + 서울 500
+  eq(g.own[1], 0); eq(g.lv[1], 1); eq(g.own[39], -1);
+  eq(g.players[0].money, 100 + 25 + 25 + 500 - 450); eq(g.turn, 1);
+});
+t('한꺼번에 팔기: 남의 땅·너무 많은 단계·빈 목록은 안 됨, 모자라면 갚기 그대로', () => {
+  let g = st(g2(), (c) => { c.own[3] = 1; c.lv[3] = 4; c.players[0].money = 100; c.own[1] = 0; c.own[39] = 0; });
+  g = roll(g, 1, 2);
+  ok(!W.legal(g, { type: 'sellMany', steps: [3] }));
+  ok(!W.legal(g, { type: 'sellMany', steps: [1, 1] }));
+  ok(!W.legal(g, { type: 'sellMany', steps: [] }));
+  g = W.apply(g, { type: 'sellMany', steps: [1] });
+  eq(g.phase, 'pay'); eq(g.own[1], -1); eq(g.players[0].money, 125);
+});
+t('한꺼번에 팔기: 내 차례면 굴리기 전에도', () => {
+  let g = st(g2(), (c) => { c.own[1] = 0; c.own[3] = 0; c.lv[3] = 1; });
+  g = W.apply(g, { type: 'sellMany', steps: [3, 3, 1] });
+  eq(g.own[3], -1); eq(g.own[1], -1); eq(g.players[0].money, 2930 + 25 + 40 + 25); eq(g.phase, 'roll'); eq(g.turn, 0);
+});
+
 console.log(`\n규칙 시험 ${pass}개 통과` + (fail ? `, ${fail}개 실패` : ''));
 if (fail) process.exit(1);

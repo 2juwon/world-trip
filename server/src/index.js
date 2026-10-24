@@ -215,6 +215,7 @@ export class Room extends DurableObject {
           if ('lv' in a) clean.lv = a.lv | 0;
           if ('t' in a) clean.t = a.t | 0;
           if ('use' in a) clean.use = !!a.use;
+          if (Array.isArray(a.steps)) clean.steps = a.steps.slice(0, 200).map((x) => x | 0);
           if (!W.legal(g, clean)) { err('지금은 그렇게 할 수 없어요'); return this.afterChange(); }
           r.away[seat] = false; r.strikes[seat] = 0;
           return this.doAct(clean);

@@ -17,7 +17,8 @@ AUTO = """() => {
   if (G.phase === 'space') { if (SEL < 0) document.querySelector('.tile[data-i="0"]').click(); b('aFly') && b('aFly').click(); return; }
   if (G.phase === 'build') { const o = document.querySelector('#decide .bopt:not([disabled])'); if (o && !DEC.sel) o.click(); const bb = b('dBuild'); (bb && !bb.disabled ? bb : b('dSkip')).click(); return; }
   if (G.phase === 'buy') { const e = b('dBuy'); if (e) { e.click(); return; } }
-  for (const id of ['aRoll', 'aVip', 'aAuto']) { const e = b(id); if (e && !e.disabled) { e.click(); return; } }
+  if (G.phase === 'pay') { if (!SELL) { const e = b('aSell'); if (e) e.click(); } else { const au = b('sAuto'); if (au) au.click(); const go = b('sGo'); if (go && !go.disabled) go.click(); else b('sCancel').click(); } return; }
+  for (const id of ['aRoll', 'aVip']) { const e = b(id); if (e && !e.disabled) { e.click(); return; } }
   const s = b('dSkip'); if (s) s.click();
 }"""
 

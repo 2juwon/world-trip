@@ -366,6 +366,42 @@ button:disabled{cursor:default; opacity:.45}
 .tk.mine.turn .parrow{display:none}
 @keyframes arrowbob{0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-50%,-7px)}}
 .tk.mine, .tk.turn{z-index:999 !important}
+
+/* 땅 팔기: 판을 어둡게, 내 땅만 밝게 */
+.stage .tile, .stage .center, .stage .kpile, .stage .dicezone, .stage .bl, .stage .tk{transition:filter .25s}
+.stage.selling .tile{filter:brightness(.36) saturate(.45)}
+.stage.selling .center, .stage.selling .kpile, .stage.selling .dicezone{filter:brightness(.4) saturate(.5)}
+.stage.selling .bl.other, .stage.selling .tk:not(.mine){filter:brightness(.4)}
+.stage.selling .tile.sellable{filter:none; cursor:pointer; box-shadow:inset 0 0 0 2.5px var(--ok), 0 0 14px color-mix(in srgb, var(--ok) 60%, transparent); z-index:3}
+.stage.selling .tile.sellable.picked{background:color-mix(in srgb, var(--ok) 34%, var(--paper)); box-shadow:inset 0 0 0 4px var(--ok), 0 0 18px var(--ok)}
+.sellchip{position:absolute; left:50%; top:52%; transform:translate(-50%,-50%); z-index:6; background:var(--panel); color:var(--ok); border:1.5px solid var(--ok); font-family:var(--f-num); font-weight:700; font-size:clamp(8px, 1.9vw, 12px); line-height:1.1; padding:.15em .35em; border-radius:6px; white-space:nowrap; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.25); pointer-events:none}
+.sellchip.on{background:var(--ok); color:#fff; font-size:clamp(8.5px, 2vw, 13px)}
+.sellchip small{display:block; font-family:var(--f-body); font-size:.72em; font-weight:700; opacity:.92}
+.sellpanel .shint{margin:0; font-size:12.5px; color:var(--ink-soft); line-height:1.45}
+.sneed{background:var(--paper-2); border-radius:12px; padding:8px 10px; display:grid; gap:6px}
+.sneed .snum{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:12.5px}
+.sneed .snum b{font-family:var(--f-num)}
+.sbar{height:8px; border-radius:4px; background:var(--line); overflow:hidden}
+.sbar i{display:block; height:100%; background:var(--warn); transition:width .25s}
+.sneed.ok .sbar i{background:var(--ok)}
+.sneed .smsg{font-size:12.5px; font-weight:700; color:var(--warn)}
+.sneed.ok .smsg{color:var(--ok)}
+.spicks{display:flex; flex-wrap:wrap; gap:6px; min-height:30px; align-items:center}
+.spk{border:1px solid var(--panel-line); background:var(--paper-2); border-radius:999px; padding:4px 10px 4px 8px; font-size:12.5px; font-weight:700; box-shadow:inset 3px 0 0 var(--sc)}
+.spk b{font-family:var(--f-num); color:var(--ok)}
+.spk span{color:var(--ink-soft); margin-left:2px}
+.sellpanel .row{display:flex; gap:8px}
+.tile.locate{animation:locate .6s ease-in-out 4; z-index:4}
+@keyframes locate{0%,100%{box-shadow:inset 0 0 0 0 var(--gold)} 50%{box-shadow:inset 0 0 0 5px var(--gold), 0 0 22px var(--gold)}}
+.album .slot{cursor:pointer}
+
+.stage.selling .tile.sellable{overflow:visible}
+@media (min-width:920px){
+  .decide{left:auto; right:max(16px, calc((100vw - 1180px) / 2 + 16px)); bottom:16px; width:340px; justify-items:stretch}
+  .decide .dpanel{width:100%; border-radius:18px; border-bottom:1px solid var(--panel-line); max-height:calc(100vh - 32px); padding:14px}
+  .decide .buyrow{grid-template-columns:1fr; justify-items:center}
+  body.selling .act, body.selling .log{visibility:hidden}
+}
 /* 기록 */
 .log{grid-area:log; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:10px 12px; font-size:11.5px; color:var(--ink-soft); max-height:220px; overflow:auto; min-width:0}
 .log h3{margin:0 0 6px; font-size:12px; letter-spacing:.08em; color:var(--ink)}
@@ -466,6 +502,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
   <div class="log" id="log"><h3>여행 기록</h3><ol id="logl"></ol></div>
 </div>
 <div class="decide" id="decide"></div>
+<div class="decide" id="sellbar"></div>
 <div id="sheets"></div>
 <div class="toast" id="toast" role="status"></div>
 <canvas class="confetti" id="fx" hidden></canvas>
@@ -909,6 +946,115 @@ function flyDeed(i, p, from){
   });
 }
 
+// ── 땅 팔기: 판이 어두워지고 내 땅만 밝게 → 눌러서 담기 → 한꺼번에 팔기 ──
+var SELL = null; // { pick: { 칸: 단계 수 } }
+function sellPhaseOk(){ return G && ['roll', 'buy', 'build', 'toll', 'space', 'pay', 'takeover'].indexOf(G.phase) >= 0; }
+function canSellNow(){ return !!(G && !busy && myTurn() && sellPhaseOk() && WT.owned(G, G.turn).length); }
+function stepVal(i, lv){ return lv > 0 ? Math.floor(WT.stepCost(i, lv - 1) / 2) : Math.floor(T[i].p / 2); }
+function pickValue(i, n){ var lv = G.lv[i], v = 0; for (var k = 0; k < n; k++) v += stepVal(i, lv - k); return v; }
+function sellTotal(){ var s = 0; for (var i in SELL.pick) s += pickValue(+i, SELL.pick[i]); return s; }
+function pickLabel(i, n){
+  var lv = G.lv[i];
+  if (n >= lv + 1) return lv ? '땅까지 모두' : '땅';
+  return lv - n > 0 ? '건물 → ' + WT.LV_NAME[lv - n] : '건물 모두';
+}
+function openSell(){
+  if (!canSellNow()) return;
+  closeSheet(); DEC.min = true; closeDecide();
+  SELL = { pick:{} };
+  $('stage').classList.add('selling'); document.body.classList.add('selling');
+  snd('step');
+  renderSell(true);
+  renderAct();
+}
+function closeSell(quiet){
+  if (!SELL) return;
+  SELL = null;
+  $('stage').classList.remove('selling'); document.body.classList.remove('selling');
+  tileEls.forEach(function(d){ d.classList.remove('sellable', 'picked'); var c = d.querySelector('.sellchip'); if (c) c.remove(); });
+  [].forEach.call(document.querySelectorAll('#blds .bl'), function(b){ b.classList.remove('other'); });
+  $('sellbar').innerHTML = ''; $('sellbar').className = 'decide';
+  if (!quiet){ DEC.min = false; renderAct(); }
+}
+function sellPick(i){
+  if (!SELL || G.own[i] !== G.turn) return;
+  var n = (SELL.pick[i] || 0) + 1;
+  if (n > G.lv[i] + 1){ delete SELL.pick[i]; snd('flip'); }
+  else { SELL.pick[i] = n; snd('step'); }
+  renderSell();
+}
+function sellAuto(){
+  if (!SELL) return;
+  var me = G.turn, g2 = WT.clone(G), need = G.phase === 'pay' ? G.pend.a : 0;
+  g2.phase = 'roll'; g2.pend = null;
+  SELL.pick = {};
+  var guard = 200;
+  while (g2.players[me].money < need && guard-- > 0){
+    var ord = WT.autoSellOrder(g2, me);
+    if (!ord.length) break;
+    var t = ord[0], ng = WT.apply(g2, { type:'sell', t:t });
+    if (ng === g2) break;
+    g2 = ng; SELL.pick[t] = (SELL.pick[t] || 0) + 1;
+  }
+  snd('step');
+  renderSell();
+}
+function sellGo(){
+  if (!SELL) return;
+  var steps = [];
+  Object.keys(SELL.pick).map(Number).sort(function(a, b){ return a - b; }).forEach(function(i){ for (var k = 0; k < SELL.pick[i]; k++) steps.push(i); });
+  if (!steps.length) return;
+  closeSell(true);
+  act({ type:'sellMany', steps:steps });
+}
+function renderSell(first){
+  if (!SELL) return;
+  if (!canSellNow()){ closeSell(); return; }
+  var me = G.turn, p = G.players[me];
+  for (var k in SELL.pick){ if (G.own[k] !== me || SELL.pick[k] > G.lv[k] + 1) delete SELL.pick[k]; }
+  tileEls.forEach(function(d, i){
+    var mine = G.own[i] === me, n = SELL.pick[i] || 0;
+    d.classList.toggle('sellable', mine);
+    d.classList.toggle('picked', mine && n > 0);
+    var c = d.querySelector('.sellchip');
+    if (!mine){ if (c) c.remove(); return; }
+    if (!c){ c = document.createElement('span'); c.className = 'sellchip'; d.appendChild(c); }
+    c.classList.toggle('on', n > 0);
+    c.innerHTML = n ? '+' + won(pickValue(i, n)) + '<small>' + pickLabel(i, n) + '</small>' : '+' + won(stepVal(i, G.lv[i]));
+  });
+  [].forEach.call(document.querySelectorAll('#blds .bl'), function(b){ b.classList.toggle('other', b.style.getPropertyValue('--oc') !== pc(me)); });
+  var total = sellTotal(), cnt = Object.keys(SELL.pick).length, pay = G.phase === 'pay';
+  var html = '<div class="dhead"><div><small>내 땅 ' + WT.owned(G, me).length + '곳 · 은행에 들인 돈의 절반을 받아요</small><b>땅 팔기</b></div><button class="dmin" id="sCancel">그만두기</button></div>' +
+    '<p class="shint">판에서 밝은 칸이 내 땅이에요. 누르면 담기고, 건물이 있으면 한 번 더 누를 때마다 한 단계씩 더 팔아요. 끝까지 누르면 빠져요.</p>';
+  if (pay){
+    var need = G.pend.a, have = p.money + total, ok = have >= need;
+    html += '<div class="sneed' + (ok ? ' ok' : '') + '"><div class="snum"><span>갚을 돈 <b>' + won(need) + '</b></span><span>현금 ' + won(p.money) + ' + 고른 땅 ' + won(total) + ' = <b>' + won(have) + '</b></span></div>' +
+      '<div class="sbar"><i style="width:' + Math.min(100, Math.round(have / need * 100)) + '%"></i></div>' +
+      '<div class="smsg">' + (ok ? '충분해요! 팔면 바로 갚아요.' : won(need - have) + ' 더 골라야 해요.') + '</div></div>';
+  }
+  html += '<div class="spicks">' + (cnt ? Object.keys(SELL.pick).map(Number).sort(function(a, b){ return a - b; }).map(function(i){
+      return '<button class="spk" data-t="' + i + '" style="--sc:' + deedColor(i) + '">' + esc(SHORT[T[i].n] || T[i].n) + ' <b>+' + won(pickValue(i, SELL.pick[i])) + '</b> <span aria-hidden="true">×</span></button>';
+    }).join('') : '<span class="hint">아직 고른 땅이 없어요.</span>') + '</div>';
+  html += '<div class="row">' + (pay ? '<button class="btn slim" id="sAuto">알아서 고르기</button>' : '') + (p.esc ? '<button class="btn gold slim" id="sCard">무전기 +20만</button>' : '') +
+    '<button class="btn main grow" id="sGo"' + (cnt ? '' : ' disabled') + '>' + (cnt ? cnt + '곳 팔기 <small>+' + won(total) + '</small>' : '팔 땅을 골라 주세요') + '</button></div>';
+  var bar = $('sellbar');
+  bar.className = 'decide' + (first ? ' in' : '');
+  bar.innerHTML = '<div class="dpanel sellpanel" role="dialog" aria-label="땅 팔기">' + html + '</div>';
+  var on = function(id, f){ var e = bar.querySelector('#' + id); if (e) e.onclick = f; };
+  on('sCancel', function(){ closeSell(); });
+  on('sAuto', sellAuto);
+  on('sGo', sellGo);
+  on('sCard', function(){ closeSell(); act({ type:'sellCard' }); });
+  [].forEach.call(bar.querySelectorAll('.spk'), function(b){ b.onclick = function(){ delete SELL.pick[+b.dataset.t]; snd('flip'); renderSell(); }; });
+}
+// 카드첩에서 카드를 누르면 판에서 그 칸을 반짝여 위치를 알려 줌
+function locateTile(i){
+  var d = tileEls[i]; if (!d) return;
+  d.classList.remove('locate'); void d.offsetWidth; d.classList.add('locate');
+  snd('pin');
+  setTimeout(function(){ d.classList.remove('locate'); }, 2400);
+}
+
 // ── 할 일 ──
 function renderAct(){
   var box = $('act');
@@ -918,10 +1064,14 @@ function renderAct(){
   var title = '', msg = '', main = '', sub = '', decide = '';
   var mineLabel = MODE === 'online' || G.players.filter(function(x){ return !x.ai; }).length === 1 ? '내 차례' : esc(p.name) + ' 차례';
   var wait = function(t){ return '<button class="btn grow wait" disabled>' + t + '</button>'; };
-  var album = meOk ? '<button class="btn grow slim" id="aMy">내 카드첩 · ' + WT.owned(G, me).length + '장' + (G.players[me].esc ? ' · 무전기' : '') + (G.players[me].vip ? ' · 우대권' : '') + '</button>' : '';
+  var album = meOk ? '<button class="btn grow slim" id="aMy">내 카드첩 · ' + WT.owned(G, me).length + '장' + (G.players[me].esc ? ' · 무전기' : '') + (G.players[me].vip ? ' · 우대권' : '') + '</button>' +
+    (canSellNow() && G.phase !== 'pay' ? '<button class="btn slim" id="aSell2">땅 팔기</button>' : '') : '';
   if (G.phase === 'over'){
     title = '여행 끝'; msg = pn(G.winner) + ' 님이 1등이에요.';
     main = '<button class="btn main grow" id="aOver">결과 보기</button>';
+  } else if (SELL){
+    title = '땅 팔기'; msg = '판에서 팔 땅을 눌러 골라 주세요.';
+    main = '<button class="btn grow" id="aSellX">그만두기</button>';
   } else if (busy){
     title = esc(p.name) + ' 차례'; msg = esc(p.name) + ' 님이 여행하는 중…';
     main = wait(myTurn() ? '움직이는 중…' : esc(p.name) + ' 님 차례예요');
@@ -961,7 +1111,7 @@ function renderAct(){
         break;
       case 'pay':
         title += ' · 돈이 모자라요'; msg = '<b class="num">' + won(G.pend.a) + '</b>을 내야 해요. 현금 ' + won(p.money) + ' — 은행에 반값에 팔아 ' + won(G.pend.a - p.money) + '을 마련하세요.';
-        main = '<button class="btn main grow" id="aAuto">알아서 팔기</button><button class="btn grow" id="aMine">팔 것 고르기</button>';
+        main = '<button class="btn main grow" id="aSell">판에서 팔 땅 고르기</button>';
         sub = '<button class="btn red grow slim" id="aBank">파산하기</button>';
         break;
     }
@@ -976,8 +1126,9 @@ function renderAct(){
   on('aFly', function(){ if (SEL >= 0) act({ type:'space', to:SEL }); });
   on('aVip', function(){ act({ type:'toll', use:true }); });
   on('aPay', function(){ act({ type:'toll', use:false }); });
-  on('aAuto', autoSell);
-  on('aMine', propsSheet);
+  on('aSell', openSell);
+  on('aSell2', openSell);
+  on('aSellX', function(){ closeSell(); });
   on('aMy', function(){ albumSheet(me); });
   on('aOver', overSheet);
   on('aBack', function(){ NET.send({ t:'back' }); });
@@ -988,7 +1139,7 @@ function renderAct(){
     bank.dataset.arm = 1; bank.textContent = '정말 파산할까요? 한 번 더 누르세요';
     setTimeout(function(){ if (bank.isConnected){ delete bank.dataset.arm; bank.textContent = '파산하기'; } }, 3000);
   };
-  if (decide){ var key = G.seq + ':' + decide; if (DEC.key !== key){ DEC.key = key; DEC.min = false; DEC.sel = 0; } renderDecide(); }
+  if (decide && !SELL){ var key = G.seq + ':' + decide; if (DEC.key !== key){ DEC.key = key; DEC.min = false; DEC.sel = 0; } renderDecide(); }
   else closeDecide();
   updateTimer();
 }
@@ -1079,6 +1230,7 @@ function say(e, g){
     case 'takeover': return P(e.p) + ' 님이 ' + P(e.from) + ' 님의 ' + tn(e.t) + '을(를) ' + won(e.a) + '에 인수했어요!';
     case 'vip': return P(e.p) + ' 님이 우대권으로 통행료 ' + won(e.a) + '을 아꼈어요';
     case 'sell': return P(e.p) + ' 님이 ' + tn(e.t) + (e.lv < 0 ? ' 땅을' : '의 건물을') + ' 은행에 팔았어요 (+' + won(e.a) + ')';
+    case 'sold': return P(e.p) + ' 님이 땅을 은행에 팔아 ' + won(e.a) + '을 받았어요';
     case 'sellcard': return P(e.p) + ' 님이 무전기를 은행에 팔았어요 (+' + won(e.a) + ')';
     case 'paid': return P(e.p) + ' 님이 ' + who(e.to) + ' ' + won(e.a) + '을 갚았어요';
     case 'gift': return P(e.p) + ' → ' + P(e.to) + ' ' + won(e.a);
@@ -1268,9 +1420,14 @@ async function play(g){
       case 'island': case 'triple': setNews(line); snd('sad'); await wait(700); break;
       case 'stay': case 'out': case 'radio': case 'spaceport': case 'cant': case 'vip': case 'halfsale': case 'nohalf': case 'lastround':
         setNews(line); await wait(650); break;
-      case 'sell': if (e.t != null){ G.own = G.own.slice(); G.lv = G.lv.slice(); if (e.lv < 0){ G.own[e.t] = -1; G.lv[e.t] = 0; } else G.lv[e.t] = e.lv; renderTiles(); }
+      case 'sell': if (e.t != null){ G.own = G.own.slice(); G.lv = G.lv.slice(); if (e.lv < 0){ G.own[e.t] = -1; G.lv[e.t] = 0; } else G.lv[e.t] = e.lv; flashTile(e.t); renderTiles(); }
+        money[e.p] += e.a; setMoney(e.p, money[e.p]);
+        setNews(line); snd('coin'); await wait(e.auto || e.many ? 230 : 420); break;
+      case 'sold': floatAt(e.p, '+' + won(e.a), true); setNews(line); await wait(500); break;
+      case 'sellcard': money[e.p] += e.a; setMoney(e.p, money[e.p]);
       /* falls through */
-      case 'sellcard': case 'paid': setNews(line); snd('coin'); await wait(e.auto ? 260 : 420); break;
+      case 'paid': if (e.k === 'paid'){ money[e.p] -= e.a; setMoney(e.p, money[e.p]); }
+        setNews(line); snd('coin'); await wait(e.auto ? 260 : 420); break;
       case 'skip': setNews(line); await wait(250); break;
       case 'bankrupt': setNews(line); snd('sad'); await wait(1100); break;
       case 'over': setNews(line); break;
@@ -1297,7 +1454,9 @@ function render(){
   if (!G) return;
   if (tokEls.length !== G.players.length) buildToks();
   if (!busy) DP = G.players.map(function(p){ return p.pos; });
+  if (SELL && !canSellNow()) closeSell(true);
   renderPeople(); renderTiles(); placeToks(); renderFacts(); renderAct(); updateClock(); renderPile();
+  if (SELL) renderSell();
   $('bSay').hidden = MODE !== 'online';
 }
 
@@ -1371,6 +1530,7 @@ setInterval(function(){ updateClock(); updateTimer(); if (!busy && MODE === 'loc
 // ── 칸 누르기 ──
 function onTile(e){
   var i = +e.currentTarget.dataset.i;
+  if (SELL){ sellPick(i); return; }
   if (G && G.phase === 'space' && myTurn() && !busy){
     if (i === WT.SPACE) return;
     SEL = i; renderTiles(); renderAct();
@@ -1474,15 +1634,17 @@ function albumSheet(who){
   });
   var spots = DEEDS.filter(function(i){ return T[i].k !== 'city'; });
   prog.push('<span>관광지·탈것 <b>' + spots.filter(function(i){ return G.own[i] === who; }).length + '/' + spots.length + '</b></span>');
-  html += '<div class="prog">' + prog.join('') + '</div><div class="album">';
+  html += '<div class="prog">' + prog.join('') + '</div>' +
+    (canSell && list.length ? '<div class="btns" style="margin:0 0 10px"><button class="btn main" id="pSell">판에서 골라 팔기</button></div>' : '') +
+    '<p class="hint" style="margin:0 0 8px">카드를 누르면 판에서 그 칸을 찾아 반짝여요.</p><div class="album">';
   DEEDS.forEach(function(i){
     var o = G.own[i];
     if (o === who){
       var lv = G.lv[i], sv = lv > 0 ? Math.floor(WT.stepCost(i, lv - 1) / 2) : Math.floor(T[i].p / 2);
-      html += '<div class="slot">' + deedHTML(i, { cls:'mini', stamp:false }) + '<span class="cap">' + (T[i].k === 'city' ? (lv ? WT.LV_NAME[lv] : '건물 없음') + ' · ' : '') + '통행료 ' + won(WT.tollOf(G, i)) + '</span>' +
-        (canSell ? '<button class="btn" data-sell="' + i + '">' + (lv > 0 ? '건물' : '땅') + ' 팔기 +' + won(sv) + '</button>' : '') + '</div>';
+      html += '<div class="slot" data-loc="' + i + '" role="button" tabindex="0" aria-label="' + esc(T[i].n) + ' 판에서 찾기">' + deedHTML(i, { cls:'mini', stamp:false }) + '<span class="cap">' + (T[i].k === 'city' ? (lv ? WT.LV_NAME[lv] : '건물 없음') + ' · ' : '') + '통행료 ' + won(WT.tollOf(G, i)) + '</span>' +
+        '</div>';
     } else {
-      html += '<div class="slot">' + deedHTML(i, { cls:'mini ghost', stamp:false }) + '<span class="cap">' + (o >= 0 ? '<b style="color:' + pc(o) + '">' + esc(G.players[o].name) + '</b> 님 카드' : '주인 없음 · ' + won(T[i].p)) + '</span></div>';
+      html += '<div class="slot" data-loc="' + i + '" role="button" tabindex="0" aria-label="' + esc(T[i].n) + ' 판에서 찾기">' + deedHTML(i, { cls:'mini ghost', stamp:false }) + '<span class="cap">' + (o >= 0 ? '<b style="color:' + pc(o) + '">' + esc(G.players[o].name) + '</b> 님 카드' : '주인 없음 · ' + won(T[i].p)) + '</span></div>';
     }
   });
   html += '</div>';
@@ -1491,7 +1653,8 @@ function albumSheet(who){
   var sh = openSheet(html, 'props');
   sh.querySelector('#pClose').onclick = closeSheet;
   [].forEach.call(sh.querySelectorAll('[data-who]'), function(b){ b.onclick = function(){ albumSheet(+b.dataset.who); }; });
-  [].forEach.call(sh.querySelectorAll('[data-sell]'), function(b){ b.onclick = function(){ closeSheet(); act({ type:'sell', t:+b.dataset.sell }); }; });
+  var ps = sh.querySelector('#pSell'); if (ps) ps.onclick = function(){ closeSheet(); openSell(); };
+  [].forEach.call(sh.querySelectorAll('[data-loc]'), function(b){ var go = function(){ closeSheet(); locateTile(+b.dataset.loc); }; b.onclick = go; b.onkeydown = function(e){ if (e.key === 'Enter') go(); }; });
   var sc = sh.querySelector('#sCard'); if (sc) sc.onclick = function(){ closeSheet(); act({ type:'sellCard' }); };
 }
 

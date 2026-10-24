@@ -440,8 +440,20 @@
       case 'skip': return g.phase === 'buy' || g.phase === 'build' || g.phase === 'takeover';
       case 'takeover': return g.phase === 'takeover' && p.money >= g.pend.a;
       case 'toll': return g.phase === 'toll';
-      case 'sell': return ['roll', 'buy', 'build', 'toll', 'space', 'pay'].indexOf(g.phase) >= 0 && g.own[a.t] === g.turn;
+      case 'sell': return ['roll', 'buy', 'build', 'toll', 'space', 'pay', 'takeover'].indexOf(g.phase) >= 0 && g.own[a.t] === g.turn;
       case 'sellCard': return g.phase !== 'over' && p.esc > 0;
+      case 'sellMany': { // 여러 칸을 한꺼번에: steps = [칸, 칸, ...] 한 번에 한 단계씩 (같은 칸을 여러 번 넣으면 더 팜)
+        if (['roll', 'buy', 'build', 'toll', 'space', 'pay', 'takeover'].indexOf(g.phase) < 0) return false;
+        if (!Array.isArray(a.steps) || !a.steps.length || a.steps.length > 200) return false;
+        var cnt = {};
+        for (var q = 0; q < a.steps.length; q++) {
+          var ti = a.steps[q];
+          if ((ti | 0) !== ti || ti < 0 || ti >= N || g.own[ti] !== g.turn) return false;
+          cnt[ti] = (cnt[ti] || 0) + 1;
+          if (cnt[ti] > g.lv[ti] + 1) return false;
+        }
+        return true;
+      }
       case 'bankrupt': return g.phase === 'pay';
       case 'lastRound': return !g.lastRound;
     }
@@ -532,6 +544,19 @@
         ev(g, { k: 'sell', p: pi, t: a.t, a: am, lv: g.own[a.t] === pi ? g.lv[a.t] : -1 });
         if (g.phase === 'pay' && p.money >= g.pend.a) payDebt(g);
         else if (g.phase === 'build' && (g.own[g.pend.t] !== pi || p.money < stepCost(g.pend.t, g.lv[g.pend.t]) || g.lv[g.pend.t] >= 4)) done(g);
+        return g;
+      }
+      case 'sellMany': {
+        var got = 0;
+        a.steps.forEach(function (ti) {
+          if (g.own[ti] !== pi) return;
+          var am2 = sellStep(g, pi, ti); got += am2;
+          ev(g, { k: 'sell', p: pi, t: ti, a: am2, lv: g.own[ti] === pi ? g.lv[ti] : -1, many: true });
+        });
+        ev(g, { k: 'sold', p: pi, a: got, n: a.steps.length });
+        if (g.phase === 'pay' && p.money >= g.pend.a) payDebt(g);
+        else if (g.phase === 'build' && (g.own[g.pend.t] !== pi || p.money < stepCost(g.pend.t, g.lv[g.pend.t]) || g.lv[g.pend.t] >= 4)) done(g);
+        else if (g.phase === 'takeover' && p.money < g.pend.a) done(g);
         return g;
       }
       case 'sellCard':
