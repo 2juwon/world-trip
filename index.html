@@ -96,12 +96,12 @@ button:disabled{cursor:default; opacity:.45}
 .stage.flat{--tilt:0deg; padding-bottom:0}
 .stage::before{content:""; position:absolute; left:6%; right:6%; bottom:0; height:12%; border-radius:50%; background:radial-gradient(closest-side, rgba(10,20,40,.35), transparent); pointer-events:none}
 .stage.flat::before{display:none}
-.envelope{position:relative; padding:7px; border-radius:14px; transform-style:preserve-3d; transform-origin:50% 55%; transform:rotateX(var(--tilt)); transition:transform .6s cubic-bezier(.3,.8,.3,1);
-  background:repeating-linear-gradient(-45deg, var(--air-red) 0 12px, var(--paper) 12px 20px, var(--air-blue) 20px 32px, var(--paper) 32px 40px)}
+.envelope{position:relative; padding:0; border-radius:10px; transform-style:preserve-3d; transform-origin:50% 55%; transform:rotateX(var(--tilt)); transition:transform .6s cubic-bezier(.3,.8,.3,1);
+  background:var(--paper)}
 .envelope::after{content:""; position:absolute; left:4px; right:4px; top:100%; height:14px; background:linear-gradient(var(--edge), var(--edge-2)); transform-origin:50% 0; transform:rotateX(-90deg); border-radius:0 0 6px 6px}
 .stage.flat .envelope::after{display:none}
-.envelope::before{content:""; position:absolute; inset:0; border-radius:14px; transform:translateZ(-14px); background:var(--edge-2); box-shadow:0 20px 40px rgba(10,20,40,.35)}
-.board{position:relative; aspect-ratio:1; max-width:100%; background:var(--paper); border-radius:8px; display:grid; transform-style:preserve-3d;
+.envelope::before{content:""; position:absolute; inset:0; border-radius:10px; transform:translateZ(-14px); background:var(--edge-2); box-shadow:0 20px 40px rgba(10,20,40,.35)}
+.board{position:relative; aspect-ratio:1; max-width:100%; background:var(--paper); border-radius:10px; overflow:visible; display:grid; transform-style:preserve-3d;
   grid-template-columns:1.45fr repeat(9, 1fr) 1.45fr; grid-template-rows:1.45fr repeat(9, 1fr) 1.45fr}
 .tile{position:relative; border:0; margin:0; background:var(--paper); padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; overflow:hidden; min-width:0; min-height:0; line-height:1.05; font-size:clamp(6.5px, 1.35vw, 11px)}
 .tile[data-i="20"]{border-top-left-radius:8px} .tile[data-i="30"]{border-top-right-radius:8px} .tile[data-i="10"]{border-bottom-left-radius:8px} .tile[data-i="0"]{border-bottom-right-radius:8px}
