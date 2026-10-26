@@ -1,0 +1,18 @@
+{
+  "id": "/world-trip/",
+  "name": "한판 세계여행",
+  "short_name": "세계여행",
+  "description": "주사위를 굴려 세계 도시를 사고 통행료를 주고받는 보드게임. 컴퓨터와, 한 기기로, 또는 각자 휴대폰으로 온라인에서",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#dde6ee",
+  "theme_color": "#23489a",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

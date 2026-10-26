@@ -1840,6 +1840,7 @@ function rulesSheet(){
 function menuSheet(){
   var html = '<h2>메뉴</h2><div class="btns col">' +
     (MODE === 'online' ? '<button class="btn" id="mInv">초대 링크 복사</button>' : '<button class="btn main" id="mNew">새 여행</button>') +
+    (canInstall() ? '<button class="btn main" id="mInstall">앱으로 설치</button>' : '') +
     '<button class="btn" id="mRules">규칙 보기</button>' +
     '<button class="btn" id="mPawn">말 모양 바꾸기</button>' +
     '<button class="btn" id="mFlat">' + (store.flat ? '판 기울여 보기 (3D)' : '위에서 판 보기 (평면)') + '</button>' +
@@ -1850,6 +1851,7 @@ function menuSheet(){
   var on = function(id, f){ var e = sh.querySelector('#' + id); if (e) e.onclick = f; };
   on('mNew', function(){ setupSheet(store.mode === 'local' ? 'local' : 'cpu'); });
   on('mRules', rulesSheet);
+  on('mInstall', function(){ closeSheet(); doInstall(); });
   on('mPawn', pawnSheet);
   on('mFlat', function(){ store.flat = !store.flat; save(); applyFlat(); closeSheet(); });
   on('mFast', function(){ store.fast = !store.fast; SPEED = store.fast ? 0.55 : 1; save(); closeSheet(); toast(store.fast ? '움직임을 빠르게 했어요' : '보통 빠르기로 했어요'); });
@@ -1861,6 +1863,25 @@ function menuSheet(){
     if (lv.dataset.arm){ leaveOnline(); return; }
     lv.dataset.arm = 1; lv.textContent = G && G.phase !== 'over' && NET.room && NET.room.status === 'playing' ? '나가면 컴퓨터가 이어서 해요. 한 번 더 누르면 나가요' : '한 번 더 누르면 나가요';
   };
+}
+// ── 앱으로 설치 ──
+var INSTALL = { ev:null };
+window.addEventListener('beforeinstallprompt', function(e){ INSTALL.ev = e; }); // 막지 않아서 크롬 기본 설치 안내도 그대로 뜸
+window.addEventListener('appinstalled', function(){ INSTALL.ev = null; toast('앱으로 설치했어요. 홈 화면에서 열 수 있어요'); });
+function isStandalone(){ try{ return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }catch(e){ return false; } }
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function canInstall(){ return !!SERVER && !isStandalone() && (!!INSTALL.ev || isIOS()); }
+function doInstall(){
+  if (INSTALL.ev){
+    var ev = INSTALL.ev; INSTALL.ev = null;
+    ev.prompt();
+    if (ev.userChoice) ev.userChoice.then(function(r){ if (r && r.outcome !== 'accepted') INSTALL.ev = ev; });
+    return;
+  }
+  var html = '<h2>홈 화면에 추가</h2><p class="lead">아이폰·아이패드는 사파리에서 직접 추가해요.</p><ol class="rules"><li>아래(아이패드는 위)의 <b>공유</b> 버튼을 눌러요.</li><li><b>홈 화면에 추가</b>를 골라요.</li><li>오른쪽 위 <b>추가</b>를 누르면 끝! 홈 화면의 세계여행 아이콘으로 앱처럼 열려요.</li></ol>' +
+    '<div class="btns"><button class="btn" id="iClose">닫기</button></div>';
+  var sh = openSheet(html, 'install');
+  sh.querySelector('#iClose').onclick = closeSheet;
 }
 function copyLink(link){
   try{ navigator.clipboard.writeText(link).then(function(){ toast('초대 링크를 복사했어요'); }, function(){ toast(link); }); }catch(e){ toast(link); }
