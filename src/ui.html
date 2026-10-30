@@ -2244,7 +2244,7 @@ function rulesSheet(){
 }
 function menuSheet(){
   var html = '<h2>메뉴</h2><div class="btns col">' +
-    (MODE === 'online' ? '<button class="btn" id="mInv">초대 링크 복사</button>' : '<button class="btn main" id="mNew">새 여행</button>') +
+    (MODE === 'online' ? '<button class="btn" id="mInv">친구 초대하기</button>' : '<button class="btn main" id="mNew">새 여행</button>') +
     (canInstall() ? '<button class="btn main" id="mInstall">앱으로 설치</button>' : '') +
     '<button class="btn" id="mRules">규칙 보기</button>' +
     '<button class="btn" id="mPawn">말 모양 바꾸기</button>' +
@@ -2262,7 +2262,7 @@ function menuSheet(){
   on('mFast', function(){ store.fast = !store.fast; SPEED = store.fast ? 0.55 : 1; save(); closeSheet(); toast(store.fast ? '움직임을 빠르게 했어요' : '보통 빠르기로 했어요'); });
   on('mOn', function(){ setupSheet('online'); });
   on('mClose', closeSheet);
-  on('mInv', function(){ copyLink(location.origin + location.pathname + '#' + NET.code); });
+  on('mInv', function(){ shareInvite(NET.code); });
   var lv = sh.querySelector('#mLeave');
   if (lv) lv.onclick = function(){
     if (lv.dataset.arm){ leaveOnline(); return; }
@@ -2288,8 +2288,20 @@ function doInstall(){
   var sh = openSheet(html, 'install');
   sh.querySelector('#iClose').onclick = closeSheet;
 }
-function copyLink(link){
-  try{ navigator.clipboard.writeText(link).then(function(){ toast('초대 링크를 복사했어요'); }, function(){ toast(link); }); }catch(e){ toast(link); }
+// 초대 링크: 서버의 /r/방번호 — 카톡 미리보기에 방 번호가 보이고, 누르면 게임으로 넘어감
+function inviteLink(code){
+  return SERVER ? SERVER + '/r/' + code : location.origin + location.pathname + '#' + code;
+}
+function inviteText(code){ return '🌍 한판 세계여행 같이 해요!\n방 번호: ' + code + '\n' + inviteLink(code); }
+function copyLink(code){
+  var txt = inviteText(code);
+  try{ navigator.clipboard.writeText(txt).then(function(){ toast('방 번호와 초대 링크를 복사했어요'); }, function(){ toast(txt); }); }catch(e){ toast(txt); }
+}
+// 휴대폰이면 공유 창(카톡 바로 고르기), 아니면 복사
+function shareInvite(code){
+  if (navigator.share){
+    navigator.share({ title:'한판 세계여행 · 방 번호 ' + code, text:'🌍 한판 세계여행 같이 해요!\n방 번호: ' + code, url:inviteLink(code) }).catch(function(e){ if (e && e.name !== 'AbortError') copyLink(code); });
+  } else copyLink(code);
 }
 
 // ── 온라인 ──
@@ -2398,9 +2410,9 @@ function pump(){
 }
 function lobbySheet(){
   var R = NET.room, S = R.settings, host = R.host === NET.seat, n = S.players;
-  var link = location.origin + location.pathname + '#' + R.code;
+  var link = inviteLink(R.code);
   var html = '<h2>대기실</h2><div class="code"><span class="hint">방 번호</span><b>' + R.code + '</b></div>' +
-    '<div class="row2"><input class="field" id="wLink" readonly value="' + esc(link) + '" aria-label="초대 링크"><button class="btn" id="wCopy">링크 복사</button></div>' +
+    '<div class="row2"><input class="field" id="wLink" readonly value="' + esc(link) + '" aria-label="초대 링크"><button class="btn main" id="wCopy">' + (navigator.share ? '초대 보내기' : '초대 복사') + '</button></div>' +
     '<h3>여행자 (' + n + '명)</h3><div class="lseats" id="wSeats"></div>' +
     '<h3>규칙' + (host ? '' : ' · 방장이 정해요') + '</h3>' +
     '<div class="ctl"><span>인원</span><div class="seg" id="wN"></div></div>' +
@@ -2430,7 +2442,7 @@ function lobbySheet(){
     else set(k, v);
   }, !host);
   sh.querySelector('#wPub').appendChild(swRow('빠른 참가에 공개', '켜면 모르는 사람도 빠른 참가로 들어올 수 있어요', !!S.public, function(){ set('public', !S.public); }, !host));
-  sh.querySelector('#wCopy').onclick = function(){ copyLink(link); };
+  sh.querySelector('#wCopy').onclick = function(){ shareInvite(R.code); };
   sh.querySelector('#wLeave').onclick = function(){ leaveOnline(); };
   var st = sh.querySelector('#wStart'); if (st) st.onclick = function(){ st.disabled = true; NET.send({ t:'start' }); };
 }

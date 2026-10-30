@@ -547,6 +547,33 @@ export class Lobby extends DurableObject {
   }
 }
 
+const PAGES_URL = 'https://2juwon.github.io/world-trip/';
+const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export function invitePage(code, url, env) {
+  const pages = (env && env.PAGES_URL) || PAGES_URL;
+  const name = (url.searchParams.get('n') || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 8);
+  const to = pages + '#' + code;
+  const title = `🌍 한판 세계여행 · 방 번호 ${code}`;
+  const desc = (name ? `${name} 님이` : '친구가') + ' 같이 세계여행 하자고 초대했어요! 눌러서 바로 들어와요.';
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escHtml(title)}</title>
+<meta name="description" content="${escHtml(desc)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="한판 세계여행">
+<meta property="og:title" content="${escHtml(title)}">
+<meta property="og:description" content="${escHtml(desc)}">
+<meta property="og:image" content="${escHtml(pages)}og-invite.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:url" content="${escHtml(url.origin + url.pathname)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta http-equiv="refresh" content="0; url=${escHtml(to)}">
+<style>body{font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#dde6ee;color:#1d2433;text-align:center}a{color:#23489a;font-weight:700}</style>
+</head><body><div><p>방 <b>${code}</b>(으)로 가는 중…</p><p><a href="${escHtml(to)}">안 넘어가면 여기를 눌러요</a></p></div>
+<script>location.replace(${JSON.stringify(to)});</script></body></html>`;
+  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -572,6 +599,9 @@ export default {
         if (request.headers.get('Upgrade') !== 'websocket') return new Response('websocket only', { status: 426, headers: CORS });
         return roomStub(env, m[1]).fetch(request);
       }
+      // 초대 링크: 카톡·메신저 미리보기에 방 번호가 보이게 (OG 태그) → 게임 페이지로 넘김
+      const inv = url.pathname.match(/^\/r\/(\d{6})\/?$/);
+      if (inv) return invitePage(inv[1], url, env);
       if (url.pathname === '/') return new Response('세계여행 서버가 돌고 있어요', { headers: { 'content-type': 'text/plain; charset=utf-8', ...CORS } });
       return json({ error: 'not found' }, 404);
     } catch (e) {
