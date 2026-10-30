@@ -621,6 +621,7 @@ function die(){ return 1 + Math.floor(rnd() * 6); }
 var G = null;          // 지금 판 (온라인은 서버가 보낸 화면)
 var MODE = 'local';    // local | online
 var busy = false;      // 애니메이션 중
+var HOLD = false;      // 하던 여행을 이어 할지 묻는 중 (컴퓨터·시간 멈춤)
 var GEN = 0;           // 판이 바뀔 때마다 +1 — 이전 판의 움직임이 끝까지 돌아 새 판을 덮지 않게
 var timer = 0;
 var DP = [];           // 화면에 보이는 말 자리
@@ -1726,7 +1727,7 @@ function showKey(id, p){
 
 // 새 판·온라인·나가기 때: 돌던 움직임과 컴퓨터 차례를 끊음
 function newEra(){
-  GEN++; clearTimeout(timer); busy = false; autoPay = false; PAUSED = false;
+  GEN++; clearTimeout(timer); busy = false; autoPay = false; PAUSED = false; HOLD = false;
   if (keySkip) keySkip(); if (deedSkip) deedSkip();
 }
 async function play(g){
@@ -1840,7 +1841,7 @@ function render(){
 
 // ── 동작 ──
 function act(a){
-  if (busy || !G || PAUSED) return;
+  if (busy || !G || PAUSED || HOLD) return;
   if (MODE === 'online'){
     if (!myTurn()) return;
     sendAction(a);
@@ -1865,7 +1866,7 @@ function autoSell(){
 var autoPay = false;
 
 function next(){
-  if (MODE === 'online' || !G || PAUSED) return;
+  if (MODE === 'online' || !G || PAUSED || HOLD) return;
   persist();
   clearTimeout(timer);
   if (G.phase === 'over') return;
@@ -1880,7 +1881,7 @@ function next(){
   }
 }
 function checkTime(){
-  if (MODE !== 'local' || !G || G.phase === 'over' || !G.cfg.timeMin || G.lastRound || busy) return false;
+  if (MODE !== 'local' || !G || G.phase === 'over' || !G.cfg.timeMin || G.lastRound || busy || HOLD) return false;
   if (Date.now() - G.t0 >= G.cfg.timeMin * 60000){ act({ type:'lastRound' }); return true; }
   return false;
 }
@@ -1925,12 +1926,12 @@ function onTile(e){
 // ── 시트 ──
 function openSheet(html, kind){
   kind = kind || 'other';
-  var canClose = kind !== 'lobby' && kind !== 'away' && !(kind === 'start' && (DEMO || !G));
+  var canClose = kind !== 'lobby' && kind !== 'away' && kind !== 'resume' && !(kind === 'start' && (DEMO || !G));
   var grab = canClose ? '<div class="grab" role="button" tabindex="0" aria-label="끌어 내려서 닫기"><i></i></div>' : '';
   $('sheets').innerHTML = '<div class="veil"><div class="sheet' + (canClose ? ' has-grab' : '') + '" role="dialog" aria-modal="true">' + grab + html + '</div></div>';
   SHEET = kind;
   var v = $('sheets').firstChild, sh = v.firstChild;
-  v.onclick = function(ev){ if (ev.target === v && SHEET !== 'start' && SHEET !== 'lobby' && SHEET !== 'over' && SHEET !== 'away') closeSheet(); };
+  v.onclick = function(ev){ if (ev.target === v && SHEET !== 'start' && SHEET !== 'lobby' && SHEET !== 'over' && SHEET !== 'away' && SHEET !== 'resume') closeSheet(); };
   if (canClose) dragToClose(sh, sh.querySelector('.grab'));
   return sh;
 }
@@ -2294,9 +2295,36 @@ function rulesSheet(){
   var sh = openSheet(html, 'rules');
   sh.querySelector('#rClose').onclick = closeSheet;
 }
+// 켰을 때 하던 여행이 있으면: 이어 하기 / 끝내기
+function resumeSheet(){
+  HOLD = true; var since = Date.now();
+  var me = G.players.findIndex(function(x){ return !x.ai; });
+  var lenTxt = G.cfg.rounds ? G.round + ' / ' + G.cfg.rounds + '바퀴' : G.cfg.timeMin ? G.cfg.timeMin + '분 판 · ' + G.round + '바퀴째' : G.round + '바퀴째';
+  var html = '<h2>하던 여행이 있어요</h2><p class="lead">' + lenTxt + ' · ' + G.players.map(function(x, i){ return '<b style="color:' + pc(i) + '">' + esc(x.name) + '</b> ' + won(WT.assets(G, i)); }).join(' · ') + '</p>' +
+    '<div class="btns col"><button class="btn main" id="rsGo">이어 하기</button><button class="btn red" id="rsEnd">끝내고 새로 시작</button></div>';
+  var sh = openSheet(html, 'resume');
+  sh.querySelector('#rsGo').onclick = function(){
+    HOLD = false; if (G && G.cfg.timeMin) G.t0 += Date.now() - since;
+    closeSheet(); setNews('하던 여행을 이어서 해요 · ' + pn(G.turn) + ' 님 차례'); next();
+  };
+  var e = sh.querySelector('#rsEnd');
+  e.onclick = function(){
+    if (!e.dataset.arm){ e.dataset.arm = 1; e.textContent = '정말 끝낼까요? 한 번 더 누르세요'; setTimeout(function(){ if (e.isConnected){ delete e.dataset.arm; e.textContent = '끝내고 새로 시작'; } }, 3000); return; }
+    endTrip();
+  };
+}
+// 여행 끝내기: 저장된 판을 지우고 시작 화면으로
+function endTrip(){
+  newEra(); closeSell(true);
+  store.game = null; save();
+  G = null; closeSheet(); demoBoard(); setupSheet(store.mode === 'local' ? 'local' : 'cpu');
+  toast('여행을 끝냈어요');
+}
+
 function menuSheet(){
   var html = '<h2>메뉴</h2><div class="btns col">' +
     (MODE === 'online' ? '<button class="btn" id="mInv">친구 초대하기</button>' : '<button class="btn main" id="mNew">새 여행</button>') +
+    (MODE === 'local' && G && !DEMO && G.phase !== 'over' ? '<button class="btn red" id="mEnd">여행 끝내기</button>' : '') +
     (canInstall() ? '<button class="btn main" id="mInstall">앱으로 설치</button>' : '') +
     '<button class="btn" id="mRules">규칙 보기</button>' +
     '<button class="btn" id="mPawn">말 모양 바꾸기</button>' +
@@ -2314,6 +2342,11 @@ function menuSheet(){
   on('mFast', function(){ store.fast = !store.fast; SPEED = store.fast ? 0.55 : 1; save(); closeSheet(); toast(store.fast ? '움직임을 빠르게 했어요' : '보통 빠르기로 했어요'); });
   on('mOn', function(){ setupSheet('online'); });
   on('mClose', closeSheet);
+  var me = sh.querySelector('#mEnd');
+  if (me) me.onclick = function(){
+    if (!me.dataset.arm){ me.dataset.arm = 1; me.textContent = '정말 끝낼까요? 하던 여행이 지워져요'; setTimeout(function(){ if (me.isConnected){ delete me.dataset.arm; me.textContent = '여행 끝내기'; } }, 3000); return; }
+    endTrip();
+  };
   on('mInv', function(){ shareInvite(NET.code); });
   var lv = sh.querySelector('#mLeave');
   if (lv) lv.onclick = function(){
@@ -2422,7 +2455,7 @@ function leaveOnline(msg){
   newEra();
   MODE = 'local'; NET.room = null; NET.queue = []; NET.seat = -1; NET.pending = false;
   closeSheet();
-  if (store.game && store.game.v === 1 && store.game.phase !== 'over'){ G = store.game; buildToks(); render(); setNews('하던 여행을 이어서 해요'); next(); }
+  if (store.game && store.game.v === 1 && store.game.phase !== 'over'){ G = store.game; buildToks(); render(); resumeSheet(); }
   else { G = null; demoBoard(); setupSheet('online'); }
   if (msg) toast(msg);
 }
@@ -2570,7 +2603,7 @@ function applyFlat(){ $('stage').classList.toggle('flat', !!store.flat); setTime
   $('bMenu').onclick = menuSheet;
   $('bSay').onclick = sayDialog;
   document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && SHEET && SHEET !== 'start' && SHEET !== 'lobby' && SHEET !== 'away') closeSheet();
+    if (e.key === 'Escape' && SHEET && SHEET !== 'start' && SHEET !== 'lobby' && SHEET !== 'away' && SHEET !== 'resume') closeSheet();
     if ((e.key === ' ' || e.key === 'Enter') && !SHEET && (keySkip || deedSkip)){ e.preventDefault(); (keySkip || deedSkip)(); return; }
     if (e.key === ' ' && !SHEET && G && G.phase === 'roll' && myTurn() && !busy && document.activeElement === document.body){ e.preventDefault(); act({ type:'roll' }); }
   });
@@ -2582,7 +2615,7 @@ function applyFlat(){ $('stage').classList.toggle('flat', !!store.flat); setTime
   if (store.game && store.game.v === 1 && store.game.phase !== 'over'){
     G = store.game; MODE = 'local';
     if (G.cfg.timeMin && store.seen){ G.t0 += Math.max(0, Date.now() - store.seen); }
-    buildToks(); render(); setNews('하던 여행을 이어서 해요 · ' + pn(G.turn) + ' 님 차례'); next();
+    buildToks(); render(); resumeSheet();
     return;
   }
   demoBoard(); setupSheet();
