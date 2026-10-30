@@ -67,6 +67,9 @@ button:disabled{cursor:default; opacity:.45}
 .tag{font-size:10px; font-weight:700; padding:1px 5px; border-radius:6px; background:var(--paper-2); color:var(--ink-soft); white-space:nowrap}
 .tag.gold{background:var(--gold); color:var(--gold-ink)}
 .tag.red{background:var(--air-red); color:#fff}
+.tag.isl{display:inline-flex; align-items:center; gap:2px; background:color-mix(in srgb, #1aa39a 22%, var(--paper-2)); color:#0d6f69; font-family:var(--f-num); font-size:11px}
+.tag.isl svg{width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+@media (prefers-color-scheme: dark){ .tag.isl{color:#5fd6cc} }
 .pp.on{box-shadow:0 0 0 2px var(--c), var(--shadow); transform:translateY(-1px)}
 .pp.out{opacity:.45}
 .pp.out .money{text-decoration:line-through}
@@ -983,7 +986,7 @@ function renderPeople(){
   box.onclick = function(ev){ var pp = ev.target.closest('.pp'); if (pp && !busy) albumSheet(+pp.id.slice(2)); };
   box.innerHTML = G.players.map(function(p, i){
     var tags = [];
-    if (p.isl > 0) tags.push('<span class="tag">무인도 ' + p.isl + '</span>');
+    if (p.isl > 0) tags.push('<span class="tag isl" title="무인도 ' + p.isl + '번 남음" aria-label="무인도 ' + p.isl + '번 남음"><svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS.island + '</svg>' + p.isl + '</span>');
     if (p.spc) tags.push('<span class="tag">우주 정거장</span>');
     if (p.esc) tags.push('<span class="tag gold">무전기' + (p.esc > 1 ? '×' + p.esc : '') + '</span>');
     if (p.vip) tags.push('<span class="tag gold">우대권' + (p.vip > 1 ? '×' + p.vip : '') + '</span>');
