@@ -521,7 +521,12 @@ button:disabled{cursor:default; opacity:.45}
 .helppop .ok{display:block; margin:10px 0 0 auto; border:0; background:var(--paper-2); border-radius:10px; padding:8px 16px; font-weight:700}
 @keyframes fadein{from{opacity:0}}
 .modechips{display:flex; flex-wrap:wrap; gap:5px; margin-top:2px}
-.modechips span{font-size:12px; font-weight:700; padding:3px 9px; border-radius:999px; background:color-mix(in srgb, var(--gold) 30%, var(--paper-2))}
+.modechips .mchip{display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:12.5px; font-weight:700; padding:5px 6px 5px 10px; border-radius:999px; border:1.5px solid color-mix(in srgb, var(--gold) 70%, var(--panel-line)); background:color-mix(in srgb, var(--gold) 34%, var(--paper-2)); color:var(--ink); cursor:pointer}
+.modechips .mchip .ck{width:16px; height:16px; border-radius:50%; background:var(--gold); color:var(--gold-ink); display:grid; place-items:center; font-size:10px; font-weight:900}
+.modechips .mchip.off{background:var(--paper-2); border-color:var(--panel-line); color:var(--ink-soft)}
+.modechips .mchip.off .nm{text-decoration:line-through; text-decoration-thickness:1.5px}
+.modechips .mchip.off .ck{background:var(--line); color:transparent}
+.modechips .mchip:disabled{cursor:default; opacity:.85}
 .btns{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; align-items:center}
 .btns.col{flex-direction:column; align-items:stretch}
 .btns .btn{flex:1}
@@ -3089,23 +3094,27 @@ var MODES = [
 ];
 function modeOf(c){
   var on = MODES.filter(function(m){ return !!c[m[0]]; }).length;
-  if (c.mode === 'custom') return 'custom';
-  return on === 0 ? 'classic' : on === MODES.length ? 'hot' : 'custom';
+  return on > 0 || c.mode === 'hot' ? 'hot' : 'classic';
 }
-function modeSet(v){ var o = { mode:v }; if (v !== 'custom') MODES.forEach(function(m){ o[m[0]] = v === 'hot'; }); return o; }
+function modeSet(v){ var o = { mode:v }; MODES.forEach(function(m){ o[m[0]] = v === 'hot'; }); return o; }
 function rulesBox(box, c, set, disabled){
   var md = modeOf(c);
-  box.innerHTML = '<div class="ctl"><span>판 모드' + qmark('판 모드', '클래식: 원작 규칙 그대로 해요.\n짜릿한 판: 지역 세트 보너스·독점 승리·축제·경매·땅 거래를 모두 켜요. 판이 빨리 뒤집혀요.\n직접 고르기: 넣고 싶은 것만 골라요.') + '</span><div class="seg" id="rMode"></div><div id="rModes"></div></div>' +
+  box.innerHTML = '<div class="ctl"><span>판 모드' + qmark('판 모드', '클래식: 원작 규칙 그대로 해요.\n짜릿한 판: 지역 세트 보너스·독점 승리·축제·경매·땅 거래가 더해져요. 판이 빨리 뒤집혀요.\n짜릿한 판에서 규칙 이름을 누르면 하나씩 끄고 켤 수 있어요.') + '</span><div class="seg" id="rMode"></div><div id="rModes"></div></div>' +
     '<div class="ctl"><span>한 판 길이' + qmark('한 판 길이', LEN_HINT) + '</span><div class="seg" id="rLen"></div></div>' +
     '<div class="ctl"><span>시작 자금</span><div class="seg" id="rStart"></div></div>' +
     '<div class="ctl"><span>월급' + qmark('월급 · 출발지 보너스', '출발을 지나거나 멈추면 월급을 받아요. 20만(원작) 또는 30만 중에 골라요.\n출발 칸에 딱 멈추면 출발지 보너스도 받아요: 판에서 땅 하나를 골라 사거나(빈 땅), 내 도시에 건물을 지어요. 서울은 고를 수 없어요.') + '</span><div class="seg" id="rSal"></div></div><div id="rSw" style="margin-top:10px"></div>';
   seg(box.querySelector('#rLen'), LENS, c.len, function(v){ set('len', v); }, disabled);
   seg(box.querySelector('#rSal'), [[200,'20만'],[300,'30만']], c.salary === 300 ? 300 : 200, function(v){ set('salary', v); }, disabled);
   seg(box.querySelector('#rStart'), [[2000,'200만'],[2930,'293만 (원작)'],[5000,'500만']], c.start, function(v){ set('start', v); }, disabled);
-  seg(box.querySelector('#rMode'), [['classic','클래식'],['hot','짜릿한 판'],['custom','직접 고르기']], md, function(v){ set('modes', modeSet(v)); }, disabled);
+  seg(box.querySelector('#rMode'), [['classic','클래식'],['hot','짜릿한 판']], md, function(v){ set('modes', modeSet(v)); }, disabled);
   var mb = box.querySelector('#rModes');
-  if (md === 'hot') mb.innerHTML = '<div class="modechips">' + MODES.map(function(m){ return '<span>' + m[1] + ' ' + qmark(m[1], m[2]) + '</span>'; }).join('') + '</div>';
-  else if (md === 'custom') MODES.forEach(function(m){ mb.appendChild(swRow(m[1], m[2], !!c[m[0]], function(){ var o = { mode:'custom' }; o[m[0]] = !c[m[0]]; set('modes', o); }, disabled)); });
+  if (md === 'hot'){
+    mb.innerHTML = '<div class="modechips">' + MODES.map(function(m){
+      var on = !!c[m[0]];
+      return '<button type="button" class="mchip' + (on ? '' : ' off') + '" data-k="' + m[0] + '" aria-pressed="' + on + '"' + (disabled ? ' disabled' : '') + '><span class="ck">✓</span><span class="nm">' + m[1] + '</span>' + qmark(m[1], m[2]) + '</button>';
+    }).join('') + '</div>' + (disabled ? '' : '<p class="modehint">눌러서 끄고 켤 수 있어요.</p>');
+    [].forEach.call(mb.querySelectorAll('.mchip'), function(b){ b.onclick = function(){ var k = b.dataset.k, o = { mode:'hot' }; o[k] = !c[k]; set('modes', o); }; });
+  }
   bindHelp(box);
   var sw = box.querySelector('#rSw');
   sw.appendChild(swRow('더블 세 번이면 무인도', '한 차례에 더블이 세 번 나오면 무인도로 가요', !!c.triple, function(){ set('triple', !c.triple); }, disabled));
@@ -3491,7 +3500,7 @@ function lobbySheet(){
   MODES.forEach(function(m){ rc[m[0]] = !!S[m[0]]; });
   rulesBox(sh.querySelector('#wRules'), rc, function(k, v){
     if (k === 'len'){ var c = lenToCfg(v, {}); NET.send({ t:'settings', settings:{ rounds:c.rounds, timeMin:c.timeMin } }); }
-    else if (k === 'modes'){ NET.lobbyMode = v.mode === 'custom' ? 'custom' : ''; var o = Object.assign({}, v); delete o.mode; if (Object.keys(o).length) NET.send({ t:'settings', settings:o }); else lobbySheet(); }
+    else if (k === 'modes'){ NET.lobbyMode = v.mode === 'hot' ? 'hot' : ''; var o = Object.assign({}, v); delete o.mode; if (Object.keys(o).length) NET.send({ t:'settings', settings:o }); else lobbySheet(); }
     else set(k, v);
   }, !host);
   sh.querySelector('#wPub').appendChild(swRow('빠른 참가에 공개', '켜면 모르는 사람도 빠른 참가로 들어올 수 있어요', !!S.public, function(){ set('public', !S.public); }, !host));
