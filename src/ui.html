@@ -848,15 +848,60 @@ function myTag(i){
   return humans <= 1 ? '나' : (Array.from(p.name)[0] || '?');
 }
 // 건물: 별장 1·2채, 빌딩, 호텔 — 지붕은 주인 색
+// 건물 그림: 빛은 왼쪽 위에서 — 앞면은 밝게, 옆면은 어둡게, 지붕·간판은 주인 색
 function bldSvg(lv){
-  var wall = 'fill="#fffdf6" stroke="#1b2436" stroke-width="1"', roof = 'style="fill:var(--oc)" stroke="#1b2436" stroke-width="1"';
-  var house = function(x, w){ return '<path d="M' + x + ' 34V22h' + w + 'v12z" ' + wall + '/><path d="M' + (x - 1.5) + ' 22l' + (w / 2 + 1.5) + '-8 ' + (w / 2 + 1.5) + ' 8z" ' + roof + '/><rect x="' + (x + w / 2 - 1.6) + '" y="28" width="3.2" height="6" fill="#1b2436"/>'; };
+  var O = 'stroke="#1b2436" stroke-width=".7" stroke-linejoin="round"';
+  var R = 'style="fill:var(--oc)" ' + O, RD = 'style="fill:color-mix(in srgb, var(--oc) 62%, #0b1224)" ' + O;
+  var LIT = '#ffd76a', DARK = '#33496e';
+  // 별장: 박공지붕 집 (x 앞면 왼쪽, s 크기 비율)
+  function cottage(x, y, s, chim){
+    var w = 12 * s, h = 10 * s, d = 4.5 * s, rh = 7 * s, gx = x + w / 2;
+    var g = '';
+    g += '<path d="M' + (x + w) + ' ' + (y - h) + 'l' + d + ' ' + (-d * .55) + 'v' + h + 'l' + (-d) + ' ' + (d * .55) + 'z" fill="#e3d2ad" ' + O + '/>'; // 옆벽
+    g += '<path d="M' + x + ' ' + y + 'v' + (-h) + 'h' + w + 'v' + h + 'z" fill="#fff8e6" ' + O + '/>'; // 앞벽
+    g += '<path d="M' + gx + ' ' + (y - h - rh) + 'l' + d + ' ' + (-d * .55) + 'l' + (w / 2 + 1.2 * s) + ' ' + (rh + .8 * s) + 'l' + (-d) + ' ' + (d * .55) + 'z" ' + RD + '/>'; // 지붕 옆
+    g += '<path d="M' + (x - 1.2 * s) + ' ' + (y - h + .8 * s) + 'L' + gx + ' ' + (y - h - rh) + 'L' + (x + w + 1.2 * s) + ' ' + (y - h + .8 * s) + 'z" ' + R + '/>'; // 박공
+    g += '<circle cx="' + gx + '" cy="' + (y - h - rh * .38) + '" r="' + (1.2 * s) + '" fill="#fff8e6" ' + O + '/>'; // 다락 둥근 창
+    if (chim) g += '<path d="M' + (x + w + d * .35) + ' ' + (y - h - rh * .55) + 'v' + (-3.2 * s) + 'h' + (2 * s) + 'v' + (2.2 * s) + 'z" fill="#b7553d" ' + O + '/>';
+    g += '<rect x="' + (x + 1.6 * s) + '" y="' + (y - 5.6 * s) + '" width="' + (3 * s) + '" height="' + (5.6 * s) + '" rx=".5" fill="#8a5631" ' + O + '/>'; // 문
+    g += '<rect x="' + (x + 6.6 * s) + '" y="' + (y - 7.4 * s) + '" width="' + (3.6 * s) + '" height="' + (3.4 * s) + '" fill="' + LIT + '" ' + O + '/><path d="M' + (x + 8.4 * s) + ' ' + (y - 7.4 * s) + 'v' + (3.4 * s) + 'M' + (x + 6.6 * s) + ' ' + (y - 5.7 * s) + 'h' + (3.6 * s) + '" stroke="#1b2436" stroke-width=".45"/>'; // 창
+    return g;
+  }
+  // 창문 줄: 몇 개는 불이 켜짐 (자리마다 늘 같게)
+  function wins(x0, y0, cols, rows, dx, dy, w, h, seed, side){
+    var g = '';
+    for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++){
+      var on = ((r * 7 + c * 3 + seed) % 5) < 2;
+      g += side ? '<path d="M' + (x0 + c * dx) + ' ' + (y0 + r * dy - c * dx * .55) + 'l' + w + ' ' + (-w * .55) + 'v' + h + 'l' + (-w) + ' ' + (w * .55) + 'z" fill="' + (on ? '#d9b04e' : '#26385a') + '"/>'
+        : '<rect x="' + (x0 + c * dx) + '" y="' + (y0 + r * dy) + '" width="' + w + '" height="' + h + '" fill="' + (on ? LIT : DARK) + '"/>';
+    }
+    return g;
+  }
   var g = '';
-  if (lv === 1) g = house(9, 12);
-  else if (lv === 2) g = house(2, 11) + house(17, 11);
-  else if (lv === 3) g = '<path d="M9 34V7h12v27z" ' + wall + '/><path d="M9 7h12V3H9z" ' + roof + '/>' + [11, 16, 21, 26].map(function(y){ return '<rect x="11.5" y="' + y + '" width="2.6" height="2.6" fill="#1b2436"/><rect x="16" y="' + y + '" width="2.6" height="2.6" fill="#1b2436"/>'; }).join('');
-  else if (lv === 4) g = '<path d="M3 34V10h24v24z" ' + wall + '/><path d="M2 10l13-7 13 7z" ' + roof + '/><text x="15" y="23" text-anchor="middle" font-size="10" font-weight="800" fill="#1b2436" font-family="sans-serif">H</text><path d="M12 34v-6h6v6" fill="#1b2436"/>';
-  return '<svg viewBox="0 0 30 36" aria-hidden="true"><ellipse cx="15" cy="34.5" rx="14" ry="2.4" fill="rgba(10,20,40,.3)"/>' + g + '</svg>';
+  if (lv === 1) g = '<ellipse cx="7" cy="33.6" rx="2.6" ry="1.6" fill="#5aa65a" ' + O + '/>' + cottage(8, 34, 1.05, true) + '<ellipse cx="25.5" cy="33.8" rx="2" ry="1.3" fill="#5aa65a" ' + O + '/>';
+  else if (lv === 2) g = cottage(11, 29, .82, true) + cottage(2.5, 34.5, .9, false) + '<ellipse cx="27" cy="33.9" rx="1.8" ry="1.2" fill="#5aa65a" ' + O + '/>';
+  else if (lv === 3){
+    // 빌딩: 높은 유리 건물 + 주인 색 띠 + 안테나
+    g += '<path d="M19 7.5l5.5-3v26.5l-5.5 3z" fill="#9fb3cf" ' + O + '/>';
+    g += '<path d="M8 34V7.5h11V34z" fill="#dfe8f4" ' + O + '/>';
+    g += wins(9.6, 11.5, 3, 7, 3.1, 2.9, 2.1, 1.8, 1, false);
+    g += wins(20.1, 11.2, 2, 7, 2.2, 2.9, 1.3, 1.7, 3, true);
+    g += '<path d="M8 7.5l5.5-3h11l-5.5 3z" ' + RD + '/><path d="M8 7.5h11v2.6H8z" ' + R + '/><path d="M19 7.5l5.5-3v2.6L19 10.1z" ' + RD + '/>';
+    g += '<path d="M15.6 4.6V-.8" stroke="#1b2436" stroke-width=".8"/><circle cx="15.6" cy="-1.2" r=".9" fill="#ff5a4e" ' + O + '/>';
+    g += '<path d="M11.6 34v-3.4h3.8V34" fill="#2b3d5e" ' + O + '/>';
+  } else if (lv === 4){
+    // 호텔: 넓고 높은 건물 + 꼭대기 간판 + 차양 + 별
+    g += '<path d="M21.5 10l6-3.2v24.6l-6 3.1z" fill="#d8c79f" ' + O + '/>';
+    g += '<path d="M2.5 34.5V10h19v24.5z" fill="#fff6dc" ' + O + '/>';
+    g += wins(4.2, 13.4, 5, 5, 3.5, 3.2, 2.3, 2, 2, false);
+    g += wins(22.6, 13, 2, 5, 2.4, 3.2, 1.5, 1.9, 4, true);
+    g += '<path d="M2.5 10l6-3.2h19l-6 3.2z" ' + RD + '/>';
+    g += '<path d="M5 9.4V3.2h14v6.2z" ' + R + '/><text x="12" y="7.7" text-anchor="middle" font-size="3.9" font-weight="900" fill="#fff" font-family="sans-serif" letter-spacing=".2">HOTEL</text>';
+    g += '<path d="M12 .2l.8 1.6 1.8.3-1.3 1.2.3 1.8-1.6-.8-1.6.8.3-1.8L9.4 2.1l1.8-.3z" fill="#ffd23f" stroke="#1b2436" stroke-width=".4" transform="translate(0 -1.6)"/>';
+    g += '<path d="M8.4 30.6h7.2l1 1.6H7.4z" ' + R + '/><path d="M9.3 34.5v-2.3h5.4v2.3" fill="#9fd0ff" ' + O + '/>';
+    g += '<path d="M24.5 8.4V3.6" stroke="#1b2436" stroke-width=".6"/><path d="M24.5 3.6l2.8.9-2.8 1z" ' + R + '/>';
+  }
+  return '<svg viewBox="0 0 30 36" aria-hidden="true"><ellipse cx="15" cy="34.6" rx="14" ry="2.3" fill="rgba(10,20,40,.28)"/>' + g + '</svg>';
 }
 // 산 땅(건물 없음)에 꽂는 주인 깃발 — 이름 첫 글자
 function flagPin(ch){
