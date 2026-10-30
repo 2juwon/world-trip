@@ -89,7 +89,7 @@ export function animMs(log) {
       case 'festival': t += 1600; break;
       case 'set': t += 1200; break;
       case 'mono': t += 1500; break;
-      case 'bid': case 'pick': case 'auctionstart': t += 300; break;
+      case 'bid': case 'pick': case 'auctionstart': case 'noride': t += 300; break;
       case 'build': t += 800; break;
       case 'toll': case 'spacefee': t += 850; break;
       case 'bankrupt': t += 1150; break;

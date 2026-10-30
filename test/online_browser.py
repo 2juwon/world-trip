@@ -14,7 +14,7 @@ AUTO = """() => {
   if (SHEET === 'props' || SHEET === 'tile' || SHEET === 'say') closeSheet();
   if (b('aBack')) { b('aBack').click(); return; }
   if (!myTurn() || NET.pending) return;
-  if (G.phase === 'space') { if (SEL < 0) document.querySelector('.tile[data-i="0"]').click(); b('aFly') && b('aFly').click(); return; }
+  if (G.phase === 'space') { if (SEL < 0) document.querySelector('.tile[data-i="0"]').click(); (b('aFly') || b('aRoll')).click(); return; }
   if (G.phase === 'startPick' || G.phase === 'festival') { const c = document.querySelector('.tile.cando'); if (c && SEL < 0) c.click(); const k = b(G.phase === 'startPick' ? 'aPick' : 'aFest'); if (k && !k.disabled) k.click(); else b('aSkip').click(); return; }
   if (G.phase === 'auction') { const d = b('dBid'); if (d) d.click(); else { const o = b('aOpen'); o && o.click(); } return; }
   if (G.phase === 'trade') { const y = b('dNo'); if (y) y.click(); else { const o = b('aOpen'); o && o.click(); } return; }

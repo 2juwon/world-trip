@@ -99,16 +99,24 @@ t('사회복지기금: 내는 곳 15만 → 받는 곳에서 모두', () => {
   g = roll(g, 1, 2);
   eq(g.fund, 0); eq(g.players[1].money, 3080);
 });
-t('우주여행: 왕복선 주인에게 20만, 다음 차례에 원하는 곳으로 (출발 지나면 월급)', () => {
+t('우주여행: 다음 차례에 탈지 고르고, 타면 왕복선 주인에게 20만 (출발 지나면 월급)', () => {
   let g = st(g2(), (c) => { c.players[0].pos = 27; c.own[32] = 1; });
   g = roll(g, 1, 2);
-  eq(g.players[0].money, 2730); eq(g.players[1].money, 3130); eq(g.players[0].spc, 1); eq(g.turn, 1);
+  eq(g.players[0].money, 2930, '서기만 하면 안 냄'); eq(g.players[0].spc, 1); eq(g.turn, 1);
+  ok(g.last.some((e) => e.k === 'spaceport' && e.fee === 200));
   g = W.apply(roll(g, 1, 2), { type: 'skip' });
-  eq(g.phase, 'space');
+  eq(g.phase, 'space'); eq(W.spaceFee(g, 0), 200);
   ok(!W.legal(g, { type: 'space', to: 30 }));
-  g = W.apply(g, { type: 'space', to: 5 });
-  eq(g.players[0].pos, 5); eq(g.phase, 'buy');
-  ok(g.last.some((e) => e.k === 'salary'));
+  const fly = W.apply(g, { type: 'space', to: 5 });
+  eq(fly.players[0].pos, 5); eq(fly.phase, 'buy'); eq(fly.players[1].money, 2930 + 200);
+  eq(fly.players[0].money, 2930 - 200 + 200, '이용료 내고 월급');
+  ok(fly.last.some((e) => e.k === 'spacefee'));
+  const walk = roll(g, 1, 2); // 안 타고 주사위
+  eq(walk.players[0].pos, 33); eq(walk.players[0].spc, 0); eq(walk.players[1].money, 2930);
+  ok(walk.last.some((e) => e.k === 'noride'));
+  const poor = st(g, (c) => { c.players[0].money = 100; });
+  ok(!W.legal(poor, { type: 'space', to: 5 }), '이용료가 없으면 못 탐');
+  ok(W.legal(poor, { type: 'roll', d: [1, 2] }));
 });
 t('우주여행 칸에 더블로 서도 한 번 더는 없음', () => {
   let g = st(g2(), (c) => { c.players[0].pos = 26; });
@@ -171,7 +179,9 @@ t('황금열쇠: 뒤로 세 칸 (월급 없음)', () => {
 t('황금열쇠: 우주여행 초대장은 이용료 없음', () => {
   let g = st(g2(), (c) => { c.players[0].pos = 33; c.deck = [1]; c.own[32] = 1; });
   g = roll(g, 1, 1);
-  eq(g.players[0].pos, 30); eq(g.players[0].money, 3130); eq(g.players[1].money, 2930); eq(g.players[0].spc, 1);
+  eq(g.players[0].pos, 30); eq(g.players[0].money, 3130); eq(g.players[1].money, 2930); eq(g.players[0].spc, 2);
+  g = W.apply(roll(g, 1, 2), { type: 'skip' });
+  eq(W.spaceFee(g, 0), 0); g = W.apply(g, { type: 'space', to: 5 }); eq(g.players[1].money, 2930 + 0, '초대장은 타도 무료');
 });
 t('황금열쇠: 생일 축하 · 한턱 쏘기', () => {
   let g = W.newGame([{ name: 'A' }, { name: 'B' }, { name: 'C' }], {}, 0, 1);

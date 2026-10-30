@@ -131,7 +131,13 @@
         if (p.esc > 0 && unownedLeft(g) < 4 && level !== 'easy') return { type: 'sellCard' };
         return { type: 'roll' };
 
-      case 'space': return { type: 'space', to: spaceTarget(g, me, L, rng) };
+      case 'space': {
+        // 왕복선 이용료가 아깝거나 낼 돈이 없으면 그냥 주사위
+        var fee = WT.spaceFee(g, me), to = spaceTarget(g, me, L, rng);
+        if (p.money < fee) return { type: 'roll' };
+        if (fee && (p.money - fee < res || spaceScore(g, me, to, L, function () { return 0.5; }) < fee * 0.5)) return { type: 'roll' };
+        return { type: 'space', to: to };
+      }
 
       case 'buy': {
         var i = g.pend.t, price = T[i].p;

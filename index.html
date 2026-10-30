@@ -988,18 +988,21 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
         return afterCharge(g);
       }
       case 'space': {
+        // 우주 정거장: 다음 차례에 왕복선을 탈지 고름. 이용료는 탈 때 왕복선 주인에게 (초대장이면 무료)
         g.again = false; p.dbl = 0;
         var free = p.spc === 2;
-        p.spc = 1;
-        var so = g.own[SHUTTLE];
-        if (!free && so >= 0 && so !== pi) {
-          ev(g, { k: 'spacefee', p: pi, to: so, a: SPACE_FEE });
-          if (!charge(g, pi, so, SPACE_FEE, 'space')) return afterCharge(g);
-        } else ev(g, { k: 'spaceport', p: pi, free: free });
+        p.spc = free ? 2 : 1;
+        ev(g, { k: 'spaceport', p: pi, free: free, fee: spaceFee(g, pi) });
         return done(g);
       }
       default: return done(g);
     }
+  }
+  // 왕복선 이용료: 주인이 따로 있고 초대장이 아니면 20만
+  function spaceFee(g, pi) {
+    var p = g.players[pi], so = g.own[SHUTTLE];
+    if (p.spc === 2 || so < 0 || so === pi || g.players[so].out) return 0;
+    return SPACE_FEE;
   }
   function afterCharge(g) { // charge가 false: 갚기 단계로 갔거나 파산함
     if (g.phase === 'pay' || g.phase === 'over') return;
@@ -1201,9 +1204,9 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
         return !!g.cfg.trade && g.phase === 'roll' && !g.offered && !p.out &&
           tradeValid(g, { from: g.turn, to: a.to, give: a.give, take: a.take, cash: a.cash });
       case 'answer': return g.phase === 'trade';
-      case 'roll': return g.phase === 'roll' && a.d && a.d.length === 2 && a.d.every(function (x) { return x >= 1 && x <= 6 && (x | 0) === x; });
+      case 'roll': return (g.phase === 'roll' || g.phase === 'space') && a.d && a.d.length === 2 && a.d.every(function (x) { return x >= 1 && x <= 6 && (x | 0) === x; });
       case 'escape': return g.phase === 'roll' && p.isl > 0 && p.esc > 0;
-      case 'space': return g.phase === 'space' && (a.to | 0) === a.to && a.to >= 0 && a.to < N && a.to !== SPACE;
+      case 'space': return g.phase === 'space' && (a.to | 0) === a.to && a.to >= 0 && a.to < N && a.to !== SPACE && p.money >= spaceFee(g, g.turn);
       case 'buy': return g.phase === 'buy' && p.money >= T[g.pend.t].p;
       case 'build': {
         if (g.phase !== 'build') return false;
@@ -1284,6 +1287,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
         return g;
       }
       case 'roll': {
+        if (g.phase === 'space') { p.spc = 0; g.phase = 'roll'; ev(g, { k: 'noride', p: pi }); } // 왕복선 안 타고 주사위로
         var d = a.d, sum = d[0] + d[1], dbl = d[0] === d[1];
         ev(g, { k: 'roll', p: pi, d: d.slice(), isl: p.isl > 0 });
         if (p.isl > 0) {
@@ -1313,12 +1317,15 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
         p.esc--; p.isl = 0; g.disc.push(keyIndex('esc'));
         ev(g, { k: 'radio', p: pi });
         return g;
-      case 'space':
+      case 'space': {
+        var fee = spaceFee(g, pi), so = g.own[SHUTTLE];
+        if (fee) { p.money -= fee; g.players[so].money += fee; ev(g, { k: 'spacefee', p: pi, to: so, a: fee }); }
         p.spc = 0; g.again = false;
         ev(g, { k: 'fly', p: pi, from: p.pos, to: a.to });
         jump(g, pi, a.to);
         land(g);
         return g;
+      }
       case 'buy': {
         var i = g.pend.t;
         before = setsOf(g, pi);
@@ -1433,7 +1440,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
     SALARY: SALARY, salaryOf: salaryOf, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
     sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf, baseToll: baseToll,
     GROUPS: GROUPS, SPOTS: SPOTS, MODE_KEYS: MODE_KEYS, groupOf: groupOf, hasSet: hasSet, setBonus: setBonus, monoOf: monoOf,
-    canPick: canPick, pickable: pickable, auctionMin: auctionMin, tradeValid: tradeValid,
+    canPick: canPick, spaceFee: spaceFee, pickable: pickable, auctionMin: auctionMin, tradeValid: tradeValid,
     takeoverPrice: takeoverPrice, takeoverRate: takeoverRate, canTakeover: canTakeover,
     newGame: newGame, apply: apply, legal: legal, viewFor: viewFor, actor: actor,
     assets: assets, owned: owned, alive: alive, sellValueAll: sellValueAll, autoSellOrder: autoSellOrder, clone: clone
@@ -1574,7 +1581,13 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
         if (p.esc > 0 && unownedLeft(g) < 4 && level !== 'easy') return { type: 'sellCard' };
         return { type: 'roll' };
 
-      case 'space': return { type: 'space', to: spaceTarget(g, me, L, rng) };
+      case 'space': {
+        // 왕복선 이용료가 아깝거나 낼 돈이 없으면 그냥 주사위
+        var fee = WT.spaceFee(g, me), to = spaceTarget(g, me, L, rng);
+        if (p.money < fee) return { type: 'roll' };
+        if (fee && (p.money - fee < res || spaceScore(g, me, to, L, function () { return 0.5; }) < fee * 0.5)) return { type: 'roll' };
+        return { type: 'space', to: to };
+      }
 
       case 'buy': {
         var i = g.pend.t, price = T[i].p;
@@ -2307,9 +2320,15 @@ function renderAct(){
         main = '<button class="btn main grow" id="aRoll">주사위 굴리기</button>' + (p.isl > 0 && p.esc ? '<button class="btn gold" id="aEsc">무전기 쓰기</button>' : '');
         break;
       case 'space':
-        title += ' · 우주여행'; msg = '판에서 가고 싶은 칸을 누르세요. 출발을 지나면 월급을 받아요.';
-        main = '<button class="btn main grow" id="aFly"' + (SEL < 0 ? ' disabled' : '') + '>' + (SEL < 0 ? '칸을 고르세요' : esc(tn(SEL)) + '(으)로 날아가기') + '</button>';
+      {
+        var fee = WT.spaceFee(G, G.turn), so = G.own[WT.SHUTTLE], cant = p.money < fee;
+        title += ' · 우주여행';
+        msg = cant ? '왕복선 이용료 <b class="num">' + won(fee) + '</b>이 모자라서 이번엔 탈 수 없어요. 주사위를 굴려요.'
+          : '왕복선을 타려면 판에서 가고 싶은 칸을 누르세요. ' + (fee ? '이용료 <b class="num">' + won(fee) + '</b>은 왕복선 주인 ' + pn(so) + ' 님에게 내요.' : (p.spc === 2 ? '초대장이 있어서 이용료는 없어요.' : '이용료는 없어요.')) + ' 안 타고 주사위를 굴려도 돼요.';
+        main = cant ? '' : '<button class="btn main grow" id="aFly"' + (SEL < 0 ? ' disabled' : '') + '>' + (SEL < 0 ? '칸을 고르세요' : esc(tn(SEL)) + '(으)로 날아가기' + (fee ? ' <small>이용료 ' + won(fee) + '</small>' : '')) + '</button>';
+        main += '<button class="btn' + (cant ? ' main' : '') + ' grow" id="aRoll">' + (cant ? '주사위 굴리기' : '안 타고 주사위') + '</button>';
         break;
+      }
       case 'buy': case 'build':
         title += ' · ' + esc(T[G.pend.t].n);
         msg = G.phase === 'buy' ? esc(T[G.pend.t].n) + '을(를) 살지 골라 주세요.' : esc(T[G.pend.t].n) + '에 지을 건물을 골라 주세요.';
@@ -2596,8 +2615,9 @@ function say(e, g){
     case 'triple': return P(e.p) + ' 더블 세 번! 무인도로 가요';
     case 'fund': return P(e.p) + ' 님이 복지기금 ' + won(e.a) + (e.a ? '을 받았어요' : ' (모인 돈이 없어요)');
     case 'donate': return P(e.p) + ' 님이 복지기금 ' + won(e.a) + '을 냈어요';
+    case 'spaceport': return P(e.p) + ' 님이 우주 정거장에 왔어요. 다음 차례에 왕복선을 탈 수 있어요' + (e.fee ? ' (이용료 ' + won(e.fee) + ')' : e.free ? ' (초대장: 무료)' : '');
+    case 'noride': return P(e.p) + ' 님은 왕복선을 안 타고 주사위를 굴려요';
     case 'spacefee': return P(e.p) + ' 님이 ' + P(e.to) + ' 님에게 왕복선 이용료 ' + won(e.a);
-    case 'spaceport': return P(e.p) + ' 님이 우주 정거장에 왔어요. 다음 차례에 원하는 곳으로!';
     case 'fly': return P(e.p) + ' 님이 ' + tn(e.to) + '(으)로 날아가요';
     case 'cant': return P(e.p) + ' 님은 ' + tn(e.t) + '을(를) 살 돈이 모자라요';
     case 'skip': if (e.ph === 'startPick') return P(e.p) + ' 님은 출발지 보너스를 쓰지 않았어요'; if (e.ph === 'festival') return P(e.p) + ' 님은 축제를 열지 않았어요';
@@ -2837,7 +2857,7 @@ async function play(g){
       case 'donate': case 'tax': setNews(line); snd('pay'); await wait(700); break;
       case 'fund': if (e.a){ money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); } setNews(line); await wait(700); break;
       case 'island': case 'triple': setNews(line); snd('sad'); await wait(700); break;
-      case 'stay': case 'out': case 'radio': case 'spaceport': case 'cant': case 'vip': case 'halfsale': case 'nohalf': case 'lastround':
+      case 'stay': case 'out': case 'radio': case 'spaceport': case 'noride': case 'cant': case 'vip': case 'halfsale': case 'nohalf': case 'lastround':
         setNews(line); await wait(650); break;
       case 'sell': if (e.t != null){ G.own = G.own.slice(); G.lv = G.lv.slice(); if (e.lv < 0){ G.own[e.t] = -1; G.lv[e.t] = 0; } else G.lv[e.t] = e.lv; flashTile(e.t); renderTiles(); }
         money[e.p] += e.a; setMoney(e.p, money[e.p]);
@@ -3071,7 +3091,7 @@ function tileSheet(i){
       start:'지나가거나 멈추면 월급 ' + won(G ? WT.salaryOf(G) : WT.SALARY) + '을 받아요.' + (G && G.cfg.startPick !== false ? ' 딱 멈추면 출발지 보너스로 판에서 땅 하나를 사거나 내 도시에 건물을 지을 수 있어요(서울은 빼고).' : ''),
       island:'멈추면 세 번 갇혀요. 자기 차례에 더블이 나오면 바로 나가요. 무전기가 있으면 언제든 나갈 수 있어요.',
       fund:'복지기금 내는 곳에 모인 돈을 모두 받아요. 지금 ' + (G ? won(G.fund) : '0') + ' 모여 있어요.' + (G && G.cfg.festival ? ' 축제 모드: 여기 서면 내 땅 하나에 축제를 열어요(통행료 2배).' : ''),
-      space:'멈추면 다음 차례에 판의 아무 칸으로나 갈 수 있어요. 왕복선 주인이 있으면 이용료 20만 원을 내요.',
+      space:'멈추면 다음 차례에 왕복선을 타고 판의 아무 칸으로나 갈 수 있어요. 탈 때 왕복선 주인에게 이용료 20만 원을 내요(초대장이면 무료). 안 타고 주사위를 굴려도 돼요.',
       donate:'멈추면 복지기금 15만 원을 내요. 모인 돈은 복지기금 받는 곳에 멈춘 사람이 가져가요.',
       key:'카드 한 장을 뽑아 적힌 대로 해요. 돈을 받거나, 내거나, 다른 곳으로 가요.'
     }[t.k];
@@ -3350,7 +3370,7 @@ function rulesSheet(){
     '<li>황금열쇠 칸에 서면 카드를 뽑아요. 무전기와 우대권은 갖고 있다가 써요.</li>' +
     '<li>무인도에 서면 세 번 갇혀요. 더블이 나오거나 무전기를 쓰면 나가요.</li>' +
     '<li>복지기금 내는 곳에서 15만 원을 내고, 받는 곳에 선 사람이 모인 돈을 다 가져가요.</li>' +
-    '<li>우주여행 칸에 서면 다음 차례에 원하는 칸으로 날아가요. 왕복선 주인에게 이용료 20만 원.</li>' +
+    '<li>우주여행 칸에 서면 다음 차례에 왕복선을 탈지 골라요. 타면 원하는 칸으로 날아가고, 왕복선 주인에게 이용료 20만 원(초대장이면 무료). 안 타면 주사위를 굴려요.</li>' +
     '<li>돈이 모자라면 땅·건물을 은행에 들인 돈의 반값에 팔아 갚아요. 그래도 모자라면 파산.</li>' +
     '<li>출발지 보너스: 출발 칸에 딱 멈추면 판에서 땅 하나를 골라 사거나(빈 땅), 내 도시에 건물을 지어요. 서울은 고를 수 없어요.</li>' +
     '<li>한 명만 남으면 끝. 바퀴·시간을 정했으면 그때 총자산(현금+땅+건물 값)이 가장 많은 사람이 1등.</li></ol>' +

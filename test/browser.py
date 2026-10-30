@@ -19,7 +19,7 @@ def play_until(page, cond, limit=600):
           if (!myTurn()) return;
           if (G.phase === 'space') {
             if (SEL < 0) { const t = document.querySelector('.tile[data-i="39"]'); t.click(); }
-            b('aFly') && b('aFly').click(); return;
+            (b('aFly') || b('aRoll')).click(); return;
           }
           if (G.phase === 'startPick' || G.phase === 'festival') { const c = document.querySelector('.tile.cando'); if (c && SEL < 0) c.click(); const k = b(G.phase === 'startPick' ? 'aPick' : 'aFest'); if (k && !k.disabled) k.click(); else b('aSkip').click(); return; }
           if (G.phase === 'auction') { const d = b('dBid'); if (d) { (Math.random() < .5 ? d : b('dPass')).click(); } else { const o = b('aOpen'); o && o.click(); } return; }

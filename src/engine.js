@@ -327,18 +327,21 @@
         return afterCharge(g);
       }
       case 'space': {
+        // 우주 정거장: 다음 차례에 왕복선을 탈지 고름. 이용료는 탈 때 왕복선 주인에게 (초대장이면 무료)
         g.again = false; p.dbl = 0;
         var free = p.spc === 2;
-        p.spc = 1;
-        var so = g.own[SHUTTLE];
-        if (!free && so >= 0 && so !== pi) {
-          ev(g, { k: 'spacefee', p: pi, to: so, a: SPACE_FEE });
-          if (!charge(g, pi, so, SPACE_FEE, 'space')) return afterCharge(g);
-        } else ev(g, { k: 'spaceport', p: pi, free: free });
+        p.spc = free ? 2 : 1;
+        ev(g, { k: 'spaceport', p: pi, free: free, fee: spaceFee(g, pi) });
         return done(g);
       }
       default: return done(g);
     }
+  }
+  // 왕복선 이용료: 주인이 따로 있고 초대장이 아니면 20만
+  function spaceFee(g, pi) {
+    var p = g.players[pi], so = g.own[SHUTTLE];
+    if (p.spc === 2 || so < 0 || so === pi || g.players[so].out) return 0;
+    return SPACE_FEE;
   }
   function afterCharge(g) { // charge가 false: 갚기 단계로 갔거나 파산함
     if (g.phase === 'pay' || g.phase === 'over') return;
@@ -540,9 +543,9 @@
         return !!g.cfg.trade && g.phase === 'roll' && !g.offered && !p.out &&
           tradeValid(g, { from: g.turn, to: a.to, give: a.give, take: a.take, cash: a.cash });
       case 'answer': return g.phase === 'trade';
-      case 'roll': return g.phase === 'roll' && a.d && a.d.length === 2 && a.d.every(function (x) { return x >= 1 && x <= 6 && (x | 0) === x; });
+      case 'roll': return (g.phase === 'roll' || g.phase === 'space') && a.d && a.d.length === 2 && a.d.every(function (x) { return x >= 1 && x <= 6 && (x | 0) === x; });
       case 'escape': return g.phase === 'roll' && p.isl > 0 && p.esc > 0;
-      case 'space': return g.phase === 'space' && (a.to | 0) === a.to && a.to >= 0 && a.to < N && a.to !== SPACE;
+      case 'space': return g.phase === 'space' && (a.to | 0) === a.to && a.to >= 0 && a.to < N && a.to !== SPACE && p.money >= spaceFee(g, g.turn);
       case 'buy': return g.phase === 'buy' && p.money >= T[g.pend.t].p;
       case 'build': {
         if (g.phase !== 'build') return false;
@@ -623,6 +626,7 @@
         return g;
       }
       case 'roll': {
+        if (g.phase === 'space') { p.spc = 0; g.phase = 'roll'; ev(g, { k: 'noride', p: pi }); } // 왕복선 안 타고 주사위로
         var d = a.d, sum = d[0] + d[1], dbl = d[0] === d[1];
         ev(g, { k: 'roll', p: pi, d: d.slice(), isl: p.isl > 0 });
         if (p.isl > 0) {
@@ -652,12 +656,15 @@
         p.esc--; p.isl = 0; g.disc.push(keyIndex('esc'));
         ev(g, { k: 'radio', p: pi });
         return g;
-      case 'space':
+      case 'space': {
+        var fee = spaceFee(g, pi), so = g.own[SHUTTLE];
+        if (fee) { p.money -= fee; g.players[so].money += fee; ev(g, { k: 'spacefee', p: pi, to: so, a: fee }); }
         p.spc = 0; g.again = false;
         ev(g, { k: 'fly', p: pi, from: p.pos, to: a.to });
         jump(g, pi, a.to);
         land(g);
         return g;
+      }
       case 'buy': {
         var i = g.pend.t;
         before = setsOf(g, pi);
@@ -772,7 +779,7 @@
     SALARY: SALARY, salaryOf: salaryOf, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
     sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf, baseToll: baseToll,
     GROUPS: GROUPS, SPOTS: SPOTS, MODE_KEYS: MODE_KEYS, groupOf: groupOf, hasSet: hasSet, setBonus: setBonus, monoOf: monoOf,
-    canPick: canPick, pickable: pickable, auctionMin: auctionMin, tradeValid: tradeValid,
+    canPick: canPick, spaceFee: spaceFee, pickable: pickable, auctionMin: auctionMin, tradeValid: tradeValid,
     takeoverPrice: takeoverPrice, takeoverRate: takeoverRate, canTakeover: canTakeover,
     newGame: newGame, apply: apply, legal: legal, viewFor: viewFor, actor: actor,
     assets: assets, owned: owned, alive: alive, sellValueAll: sellValueAll, autoSellOrder: autoSellOrder, clone: clone
