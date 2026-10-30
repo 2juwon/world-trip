@@ -21,6 +21,10 @@ def play_until(page, cond, limit=600):
             if (SEL < 0) { const t = document.querySelector('.tile[data-i="39"]'); t.click(); }
             b('aFly') && b('aFly').click(); return;
           }
+          if (G.phase === 'startPick' || G.phase === 'festival') { const c = document.querySelector('.tile.cando'); if (c && SEL < 0) c.click(); const k = b(G.phase === 'startPick' ? 'aPick' : 'aFest'); if (k && !k.disabled) k.click(); else b('aSkip').click(); return; }
+          if (G.phase === 'auction') { const d = b('dBid'); if (d) { (Math.random() < .5 ? d : b('dPass')).click(); } else { const o = b('aOpen'); o && o.click(); } return; }
+          if (G.phase === 'trade') { const y = b(Math.random() < .5 ? 'dYes' : 'dNo'); if (y) y.click(); else { const o = b('aOpen'); o && o.click(); } return; }
+          if (G.phase === 'roll' && G.cfg.trade && !G.offered && Math.random() < .15 && b('aTrade')) { b('aTrade').click(); const tk = document.querySelector('#tTake .tchip'); if (tk) tk.click(); const go = b('trGo'); if (go && !go.disabled) go.click(); else closeSheet(); return; }
           if (G.phase === 'build') { const o = document.querySelector('#decide .bopt:not([disabled])'); if (o && !DEC.sel) o.click(); const bb = b('dBuild'); (bb && !bb.disabled ? bb : b('dSkip')).click(); return; }
           if (G.phase === 'buy') { const e = b('dBuy'); if (e) { e.click(); return; } }
   if (G.phase === 'pay') { if (!SELL) { const e = b('aSell'); if (e) e.click(); } else { const au = b('sAuto'); if (au) au.click(); const go = b('sGo'); if (go && !go.disabled) go.click(); else b('sCancel').click(); } return; }
@@ -69,11 +73,11 @@ with sync_playwright() as p:
     page.evaluate("closeSheet(); setupSheet('local')")
     page.click('#tLocal'); page.click('#lN button:nth-child(2)')
     page.select_option('#lWho1', 'human'); page.select_option('#lWho2', 'easy')
-    page.click('#rLen button:nth-child(1)')
+    page.click('#rLen button:nth-child(1)'); page.click('#rMode button:nth-child(2)')
     page.click('#sGo')
     page.evaluate('SPEED = 0.03')
     ok3 = play_until(page, "G && G.round >= 6", 300)
-    print('한 기기로 6바퀴:', ok3)
+    print('한 기기로(짜릿한 판) 6바퀴:', ok3, page.evaluate('G.cfg.auction'))
     page.evaluate('SPEED = 1')
     page.wait_for_timeout(300)
     page.screenshot(path=OUT + '/07-local.png')
@@ -87,7 +91,16 @@ with sync_playwright() as p:
     play_until(pg2, "G && G.round >= 8", 300)
     pg2.evaluate('SPEED = 1'); pg2.wait_for_timeout(300)
     pg2.screenshot(path=OUT + '/08-desktop-dark.png')
-    for pg in (page, pg2):
+    # 짜릿한 판: 컴퓨터 2명과 10바퀴 끝까지 (경매·거래·축제·출발지 보너스 버튼을 눌러 가며)
+    ctx3 = br.new_context(viewport={'width': 390, 'height': 844})
+    pg3 = ctx3.new_page()
+    pg3.on('pageerror', lambda e: errs.append(str(e)))
+    pg3.goto('file://' + FILE); pg3.wait_for_timeout(400)
+    pg3.click('#tCpu'); pg3.click('#cN button:nth-child(2)'); pg3.click('#rMode button:nth-child(2)'); pg3.click('#rLen button:nth-child(2)'); pg3.click('#sGo')
+    pg3.evaluate('SPEED = 0.03')
+    ok4 = play_until(pg3, "G && G.phase === 'over'", 600)
+    print('짜릿한 판 끝까지:', ok4, pg3.evaluate("[G.round, G.endWhy, JSON.stringify(G.cfg)].join(' ')"), pg3.evaluate("LOG.filter(l => /경매|거래|축제|보너스|세트/.test(l)).length"), '건 (모드 사건 기록)')
+    for pg in (page, pg2, pg3):
         w = pg.evaluate("[document.documentElement.scrollWidth, innerWidth]")
         print('가로 넘침', w)
     br.close()

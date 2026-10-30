@@ -42,8 +42,10 @@ const emptySeat = () => ({ kind: 'empty', pid: null, name: '', offAt: 0, left: f
 const botName = (i) => BOTS[i];
 const die = () => 1 + (rand32() % 6);
 
+const MODE_KEYS = ['setBonus', 'monoWin', 'festival', 'auction', 'trade'];
 export const DEFAULT_SETTINGS = {
-  players: 2, start: 2930, triple: true, buildOnBuy: false, takeover: true, rounds: 20, timeMin: 0,
+  players: 2, start: 2930, triple: true, buildOnBuy: false, takeover: true, startPick: true, rounds: 20, timeMin: 0,
+  setBonus: false, monoWin: false, festival: false, auction: false, trade: false,
   turnSec: 30, ai: 'normal', public: false,
 };
 export function cleanSettings(cur, s, minPlayers) {
@@ -51,14 +53,18 @@ export function cleanSettings(cur, s, minPlayers) {
   if (!s || typeof s !== 'object') return out;
   if ([2, 3, 4].includes(s.players)) out.players = Math.max(s.players, minPlayers || 2);
   if ([2000, 2930, 5000].includes(s.start)) out.start = s.start;
-  for (const k of ['triple', 'buildOnBuy', 'takeover', 'public']) if (typeof s[k] === 'boolean') out[k] = s[k];
+  for (const k of ['triple', 'buildOnBuy', 'takeover', 'startPick', 'public', ...MODE_KEYS]) if (typeof s[k] === 'boolean') out[k] = s[k];
   // 판 길이: 바퀴와 시간은 하나만
   if ([0, 10, 20, 30].includes(s.rounds) && [0, 20, 30, 45, 60].includes(s.timeMin)) { out.rounds = s.rounds; out.timeMin = s.rounds ? 0 : s.timeMin; }
   if (TURN_SECS.includes(s.turnSec)) out.turnSec = s.turnSec;
   if (['easy', 'normal'].includes(s.ai)) out.ai = s.ai;
   return out;
 }
-const cfgOf = (s) => ({ start: s.start, triple: s.triple, buildOnBuy: s.buildOnBuy, takeover: s.takeover !== false, rounds: s.rounds, timeMin: s.timeMin });
+const cfgOf = (s) => {
+  const c = { start: s.start, triple: s.triple, buildOnBuy: s.buildOnBuy, takeover: s.takeover !== false, startPick: s.startPick !== false, rounds: s.rounds, timeMin: s.timeMin };
+  for (const k of MODE_KEYS) c[k] = !!s[k];
+  return c;
+};
 
 // 화면 애니메이션이 끝날 때까지 걸리는 시간(대략) — 다음 동작은 이 뒤에
 export function animMs(log) {
@@ -75,6 +81,14 @@ export function animMs(log) {
       case 'warp': t += 950; break;
       case 'buy': t += 1800; break;
       case 'takeover': t += 2000; break;
+      case 'auction': t += 2200; break;
+      case 'trade': t += 2200; break;
+      case 'reject': t += 900; break;
+      case 'offer': t += 400; break;
+      case 'festival': t += 1600; break;
+      case 'set': t += 1200; break;
+      case 'mono': t += 1500; break;
+      case 'bid': case 'pick': case 'auctionstart': t += 300; break;
       case 'build': t += 800; break;
       case 'toll': case 'spacefee': t += 850; break;
       case 'bankrupt': t += 1150; break;
@@ -209,7 +223,7 @@ export class Room extends DurableObject {
         case 'act': {
           const g = r.game, a = msg.a;
           if (r.status !== 'playing' || !g) return err('지금은 할 수 없어요');
-          if (g.turn !== seat) return err('내 차례가 아니에요');
+          if (W.actor(g) !== seat) return err('내 차례가 아니에요');
           if ((msg.seq | 0) !== g.seq) return this.afterChange(); // 이미 지나간 화면에서 누름
           if (!a || typeof a.type !== 'string' || a.type === 'lastRound') return err('할 수 없는 동작이에요');
           const clean = { type: a.type };
@@ -219,6 +233,11 @@ export class Room extends DurableObject {
           if ('t' in a) clean.t = a.t | 0;
           if ('use' in a) clean.use = !!a.use;
           if (Array.isArray(a.steps)) clean.steps = a.steps.slice(0, 200).map((x) => x | 0);
+          if ('a' in a) clean.a = a.a | 0;
+          if ('ok' in a) clean.ok = !!a.ok;
+          if ('cash' in a) clean.cash = a.cash | 0;
+          if (Array.isArray(a.give)) clean.give = a.give.slice(0, 30).map((x) => x | 0);
+          if (Array.isArray(a.take)) clean.take = a.take.slice(0, 30).map((x) => x | 0);
           if (!W.legal(g, clean)) { err('지금은 그렇게 할 수 없어요'); return this.afterChange(); }
           r.away[seat] = false; r.strikes[seat] = 0;
           return this.doAct(clean);
@@ -384,7 +403,7 @@ export class Room extends DurableObject {
     const anyone = r.seats.some((s) => s.kind === 'human' && online.has(s.pid));
     if (!anyone) return this.arm({ kind: 'cleanup', at: now + EMPTY_ROOM_MS });
     if (r.status !== 'playing' || !r.game) return this.arm(null);
-    const g = r.game, t = g.turn, s = r.seats[t], step = r.round + ':' + g.seq;
+    const g = r.game, t = W.actor(g), s = r.seats[t], step = r.round + ':' + g.seq;
     const base = r.turnAt + animMs(g.last) * this.speed;
     if (g.phase === 'over') return this.arm(null);
     const offline = s.kind === 'human' && !online.has(s.pid);
@@ -426,7 +445,7 @@ export class Room extends DurableObject {
       if (!g || r.status !== 'playing' || r.round + ':' + g.seq !== p.step) { r.pending = null; await this.afterChange(); return; }
       if (Date.now() < p.at - 50) { await this.afterChange(); return; }
       r.pending = null;
-      const s = r.seats[g.turn];
+      const s = r.seats[W.actor(g)];
       if (p.kind === 'none' || Date.now() < p.at - 50) { await this.afterChange(); return; }
       if (p.kind === 'timeout') {
         r.strikes[p.seat] = (r.strikes[p.seat] || 0) + 1;

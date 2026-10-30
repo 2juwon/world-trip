@@ -15,6 +15,10 @@ AUTO = """() => {
   if (b('aBack')) { b('aBack').click(); return; }
   if (!myTurn() || NET.pending) return;
   if (G.phase === 'space') { if (SEL < 0) document.querySelector('.tile[data-i="0"]').click(); b('aFly') && b('aFly').click(); return; }
+  if (G.phase === 'startPick' || G.phase === 'festival') { const c = document.querySelector('.tile.cando'); if (c && SEL < 0) c.click(); const k = b(G.phase === 'startPick' ? 'aPick' : 'aFest'); if (k && !k.disabled) k.click(); else b('aSkip').click(); return; }
+  if (G.phase === 'auction') { const d = b('dBid'); if (d) d.click(); else { const o = b('aOpen'); o && o.click(); } return; }
+  if (G.phase === 'trade') { const y = b('dNo'); if (y) y.click(); else { const o = b('aOpen'); o && o.click(); } return; }
+  if (G.phase === 'roll' && G.cfg.trade && !G.offered && b('aTrade') && !window.__offered) { window.__offered = 1; b('aTrade').click(); const tk = document.querySelector('#tTake .tchip'); if (tk) tk.click(); const go = b('trGo'); if (go && !go.disabled) go.click(); else closeSheet(); return; }
   if (G.phase === 'build') { const o = document.querySelector('#decide .bopt:not([disabled])'); if (o && !DEC.sel) o.click(); const bb = b('dBuild'); (bb && !bb.disabled ? bb : b('dSkip')).click(); return; }
   if (G.phase === 'buy') { const e = b('dBuy'); if (e) { e.click(); return; } }
   if (G.phase === 'pay') { if (!SELL) { const e = b('aSell'); if (e) e.click(); } else { const au = b('sAuto'); if (au) au.click(); const go = b('sGo'); if (go && !go.disabled) go.click(); else b('sCancel').click(); } return; }
@@ -51,6 +55,8 @@ with sync_playwright() as pw:
     A.wait_for_function("NET.room.settings.rounds === 10")
     A.click('#wT button:nth-child(1)')      # 시간 없음 (시험이 빨리 돌게)
     A.wait_for_function("NET.room.settings.turnSec === 0")
+    A.click('#rMode button:nth-child(2)')   # 짜릿한 판
+    A.wait_for_function("NET.room.settings.auction && NET.room.settings.trade && NET.room.settings.festival")
     # 초대 링크로 들어가기
     B.goto('file://' + FILE + '#' + code); B.wait_for_timeout(500)
     B.wait_for_selector('#oInvite')
@@ -82,7 +88,7 @@ with sync_playwright() as pw:
     A.wait_for_timeout(500)
     ra = A.evaluate("G.ranks.join(',') + ' ' + G.round + ' ' + G.endWhy")
     rb = B.evaluate("G.ranks.join(',') + ' ' + G.round + ' ' + G.endWhy")
-    print('끝까지:', ok, ra, '| 두 화면 같음:', ra == rb)
+    print('끝까지:', ok, ra, '| 두 화면 같음:', ra == rb, '| 판 모드', A.evaluate('G.cfg.auction && G.cfg.trade'))
     A.screenshot(path=OUT + '/on-04-over-phone.png'); B.screenshot(path=OUT + '/on-05-over-desktop.png')
     # 한 판 더
     A.click('#oAgain')

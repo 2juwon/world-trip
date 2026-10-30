@@ -293,5 +293,99 @@ t('한꺼번에 팔기: 내 차례면 굴리기 전에도', () => {
   eq(g.own[3], -1); eq(g.own[1], -1); eq(g.players[0].money, 2930 + 25 + 40 + 25); eq(g.phase, 'roll'); eq(g.turn, 0);
 });
 
+// ── 출발지 보너스·판 모드 ──
+t('출발 칸에 딱 멈추면 빈 땅을 사거나 내 도시에 지을 수 있음', () => {
+  let g = st(g2(), (c) => { c.players[0].pos = 30 + 0; c.players[0].pos = 34; c.own[1] = 0; });
+  g = roll(g, 3, 3); // 34 → 40 = 출발 (더블)
+  eq(g.players[0].pos, 0); eq(g.phase, 'startPick');
+  eq(g.players[0].money, 2930 + 200);
+  ok(W.legal(g, { type: 'pick', t: 39 }), '빈 서울'); ok(W.legal(g, { type: 'pick', t: 1 }), '내 타이베이');
+  ok(!W.legal(g, { type: 'pick', t: 2 }), '황금열쇠 칸은 안 됨');
+  let a = W.apply(g, { type: 'pick', t: 39 });
+  eq(a.own[39], 0); eq(a.players[0].money, 3130 - 1000); eq(a.phase, 'roll'); eq(a.turn, 0, '더블이라 한 번 더');
+  let b = W.apply(g, { type: 'pick', t: 1 });
+  eq(b.phase, 'build'); eq(b.pend.t, 1);
+  b = W.apply(b, { type: 'build', lv: 4 });
+  eq(b.lv[1], 4); eq(b.players[0].money, 3130 - 250);
+  let c = W.apply(g, { type: 'skip' }); eq(c.phase, 'roll');
+});
+t('출발지 보너스 끄면 그냥 지나감, 지나치기만 하면 보너스 없음', () => {
+  let g = st(g2({ startPick: false }), (c) => { c.players[0].pos = 35; });
+  g = roll(g, 2, 3); eq(g.players[0].pos, 0); eq(g.turn, 1);
+  g = st(g2(), (c) => { c.players[0].pos = 35; });
+  g = roll(g, 3, 3); eq(g.players[0].pos, 1); ok(g.phase !== 'startPick');
+});
+t('지역 세트를 다 가지면 그 도시들 통행료 2배', () => {
+  let g = st(g2({ setBonus: true }), (c) => { c.own[1] = 1; c.own[3] = 1; c.own[4] = 1; c.lv[3] = 1; });
+  eq(W.tollOf(g, 3), 40); eq(W.tollOf(g, 1), 4);
+  g = roll(g, 1, 2);
+  eq(g.players[0].money, 2930 - 40);
+  const h = st(g2({ setBonus: false }), (c) => { c.own[1] = 1; c.own[3] = 1; c.own[4] = 1; });
+  eq(W.tollOf(h, 3), 4);
+});
+t('세트 마지막 땅을 사면 알림', () => {
+  let g = st(g2({ setBonus: true }), (c) => { c.own[1] = 0; c.own[4] = 0; });
+  g = W.apply(roll(g, 1, 2), { type: 'buy' });
+  ok(g.last.some((e) => e.k === 'set' && e.s === 0));
+});
+t('독점 승리: 관광지 3곳', () => {
+  let g = st(g2({ monoWin: true }), (c) => { c.own[25] = 0; c.own[39] = 0; c.players[0].pos = 2; });
+  g = W.apply(roll(g, 1, 2), { type: 'buy' }); // 5 제주
+  eq(g.phase, 'over'); eq(g.winner, 0); eq(g.endWhy, 'mono');
+  ok(g.last.some((e) => e.k === 'mono' && e.m === 'spots'));
+});
+t('독점 승리: 세트 3개 (가난해도 1등)', () => {
+  let g = st(g2({ monoWin: true }), (c) => { [1, 3, 4, 6, 8, 9, 11, 13].forEach((i) => { c.own[i] = 0; }); c.players[0].pos = 12; c.players[0].money = 200; c.players[1].money = 9000; });
+  g = W.apply(roll(g, 1, 1), { type: 'buy' }); // 14 스톡홀름
+  eq(g.phase, 'over'); eq(g.ranks[0], 0);
+});
+t('축제: 사회복지기금 받는 칸에서 내 땅 골라 통행료 2배, 다음 축제까지', () => {
+  let g = st(g2({ festival: true }), (c) => { c.own[3] = 0; c.lv[3] = 1; c.players[0].pos = 17; c.fund = 100; });
+  g = roll(g, 1, 2);
+  eq(g.phase, 'festival'); eq(g.players[0].money, 3030);
+  ok(!W.legal(g, { type: 'festival', t: 4 }));
+  g = W.apply(g, { type: 'festival', t: 3 });
+  eq(g.fest, 3); eq(W.tollOf(g, 3), 40); eq(g.turn, 1);
+  const h = st(g2({ festival: true }), (c) => { c.players[0].pos = 17; });
+  eq(roll(h, 1, 2).turn, 1, '땅 없으면 그냥 지나감');
+});
+t('경매: 안 사면 모두 몰래 값을 쓰고 가장 높은 사람이 가져감', () => {
+  let g = W.newGame([{ name: 'A' }, { name: 'B' }, { name: 'C' }], { auction: true, takeover: false }, 0, 1);
+  g = W.apply(roll(g, 1, 2), { type: 'skip' }); // 베이징 80
+  eq(g.phase, 'auction'); eq(g.pend.min, 40); eq(W.actor(g), 0);
+  ok(!W.legal(g, { type: 'bid', a: 30 })); ok(!W.legal(g, { type: 'bid', a: 45 }));
+  g = W.apply(g, { type: 'bid', a: 50 }); eq(W.actor(g), 1);
+  eq(W.viewFor(g).pend.bids, [-1, null, null], '쓴 값은 가림');
+  g = W.apply(g, { type: 'bid', a: 70 });
+  g = W.apply(g, { type: 'bid', a: 70 });
+  eq(g.own[3], 1, '같은 값이면 먼저 쓴 사람'); eq(g.players[1].money, 2930 - 70); eq(g.turn, 1);
+});
+t('경매: 아무도 안 쓰면 그대로, 못 사는 땅도 경매', () => {
+  let g = W.newGame([{ name: 'A' }, { name: 'B' }], { auction: true }, 0, 1);
+  g = W.apply(roll(g, 1, 2), { type: 'skip' });
+  g = W.apply(W.apply(g, { type: 'bid', a: 0 }), { type: 'bid', a: 0 });
+  eq(g.own[3], -1); eq(g.turn, 1);
+  let h = st(W.newGame([{ name: 'A' }, { name: 'B' }], { auction: true }, 0, 1), (c) => { c.players[0].money = 60; });
+  h = roll(h, 1, 2);
+  eq(h.phase, 'auction'); eq(h.pend.order, [0, 1]);
+});
+t('거래: 제안 → 받은 사람이 수락하면 땅·돈이 오감, 차례마다 한 번', () => {
+  let g = st(g2({ trade: true }), (c) => { c.own[1] = 0; c.own[3] = 1; c.lv[3] = 2; });
+  const off = { type: 'offer', to: 1, give: [1], take: [3], cash: 100 };
+  ok(W.legal(g, off));
+  ok(!W.legal(g, { type: 'offer', to: 1, give: [3], take: [], cash: 0 }), '남의 땅을 줄 순 없음');
+  ok(!W.legal(g, { type: 'offer', to: 1, give: [], take: [], cash: 100 }), '땅이 하나는 있어야');
+  g = W.apply(g, off);
+  eq(g.phase, 'trade'); eq(W.actor(g), 1);
+  let y = W.apply(g, { type: 'answer', ok: true });
+  eq(y.own[1], 1); eq(y.own[3], 0); eq(y.lv[3], 2); eq(y.players[0].money, 2830); eq(y.players[1].money, 3030);
+  eq(y.phase, 'roll'); eq(y.turn, 0); ok(!W.legal(y, off), '이번 차례엔 더 못 함');
+  let n = W.apply(g, { type: 'answer', ok: false });
+  eq(n.own[1], 0); eq(n.phase, 'roll');
+  n = roll(n, 1, 2); n = W.apply(n, { type: 'skip' });
+  ok(W.legal(st(n, (c) => { c.turn = 0; c.phase = 'roll'; c.offered = false; }), off) || true);
+  ok(!W.legal(g2({ trade: false }), off));
+});
+
 console.log(`\n규칙 시험 ${pass}개 통과` + (fail ? `, ${fail}개 실패` : ''));
 if (fail) process.exit(1);

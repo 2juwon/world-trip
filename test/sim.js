@@ -14,7 +14,7 @@ function play(levels, cfg, seed) {
   let steps = 0, turns = 0, keys = 0;
   while (s.phase !== 'over') {
     if (++steps > 20000) throw new Error('끝나지 않음 ' + seed + ' round ' + s.round);
-    const lv = levels[s.turn];
+    const lv = levels[W.actor(s)];
     let a = A.choose(s, lv === 'random' ? 'easy' : lv, r);
     if (!a) throw new Error('수가 없음 ' + s.phase);
     if (a.type === 'roll') a = { type: 'roll', d: [die(r), die(r)] };
@@ -31,9 +31,9 @@ function play(levels, cfg, seed) {
   return { winner: s.winner, rounds: s.round, turns, keys, why: s.endWhy };
 }
 function match(levels, cfg, n) {
-  const w = levels.map(() => 0); let rd = 0, tu = 0, maxR = 0;
-  for (let i = 1; i <= n; i++) { const g = play(levels, cfg, i * 7919); w[g.winner]++; rd += g.rounds; tu += g.turns; maxR = Math.max(maxR, g.rounds); }
-  console.log(levels.join(' vs '), JSON.stringify(cfg), '승:', w.join('/'), `평균 ${(rd / n).toFixed(1)}바퀴(최대 ${maxR}) 굴림 ${(tu / n).toFixed(0)}`);
+  const w = levels.map(() => 0); let rd = 0, tu = 0, maxR = 0; const why = {};
+  for (let i = 1; i <= n; i++) { const g = play(levels, cfg, i * 7919); w[g.winner]++; rd += g.rounds; tu += g.turns; maxR = Math.max(maxR, g.rounds); why[g.why] = (why[g.why] || 0) + 1; }
+  console.log(levels.join(' vs '), JSON.stringify(cfg), '승:', w.join('/'), `평균 ${(rd / n).toFixed(1)}바퀴(최대 ${maxR}) 굴림 ${(tu / n).toFixed(0)}`, JSON.stringify(why));
 }
 const N = +process.argv[2] || 200;
 match(['normal', 'easy'], {}, N);
@@ -46,3 +46,10 @@ match(['normal', 'easy'], { rounds: 15 }, N);
 match(['normal', 'normal', 'easy'], { start: 2000, triple: false, buildOnBuy: true }, N);
 match(['normal', 'easy'], { takeover: false }, N);
 match(['normal', 'normal', 'normal', 'normal'], { takeover: false }, N);
+const HOT = { setBonus: true, monoWin: true, festival: true, auction: true, trade: true };
+match(['normal', 'easy'], HOT, N);
+match(['normal', 'normal', 'normal'], HOT, N);
+match(['normal', 'easy', 'easy', 'easy'], Object.assign({ rounds: 20 }, HOT), N);
+match(['normal', 'normal'], { auction: true }, N);
+match(['normal', 'normal', 'normal'], { trade: true, setBonus: true }, N);
+match(['normal', 'normal'], { startPick: false }, N);

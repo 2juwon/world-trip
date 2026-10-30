@@ -43,14 +43,90 @@
     return t.t[0] * 1.1;
   }
 
+  // 땅 하나의 값어치(거래·경매용): 땅값+건물값, 세트를 채우면 더 귀함
+  function holdValue(g, i, who) {
+    var v = T[i].p + WT.buildValue(i, g.lv[i]);
+    var k = WT.groupOf(i);
+    if (g.cfg.setBonus && k >= 0) {
+      var gr = WT.GROUPS[k], mine = gr.filter(function (j) { return j !== i && g.own[j] === who; }).length;
+      if (mine === gr.length - 1) v *= 1.8; else if (mine) v *= 1.2;
+    }
+    if (g.cfg.monoWin && T[i].k === 'spot') {
+      var sp = WT.SPOTS.filter(function (j) { return j !== i && g.own[j] === who; }).length;
+      if (sp === 2) v *= 3; else if (sp === 1) v *= 1.3;
+    }
+    return v;
+  }
+  // 거래 제안을 받을지
+  function judge(g, o, me, level, rng) {
+    var get = 0, lose = 0;
+    o.give.forEach(function (i) { get += holdValue(g, i, me); });
+    o.take.forEach(function (i) { lose += holdValue(g, i, me); });
+    // 상대가 세트·독점을 채우게 되면 그만큼 더 아까움
+    o.take.forEach(function (i) { lose += (holdValue(g, i, o.from) - (T[i].p + WT.buildValue(i, g.lv[i]))) * 0.8; });
+    get += o.cash;
+    if (level === 'easy') return get >= lose * (0.8 + rng() * 0.6);
+    // 상대가 독점 승리를 완성하면 절대 안 받음
+    if (g.cfg.monoWin) {
+      var t = WT.clone(g);
+      o.take.forEach(function (i) { t.own[i] = o.from; }); o.give.forEach(function (i) { t.own[i] = me; });
+      if (WT.monoOf(t, o.from)) return false;
+    }
+    return get >= lose * 1.15 + 20;
+  }
+  // 세트를 채울 땅을 돈 주고 사자고 제안 (가끔)
+  function tradeIdea(g, me, L, level, rng) {
+    if (!g.cfg.trade || g.offered || level === 'easy' || rng() > 0.35) return null;
+    var p = g.players[me], res = reserve(g, me, L);
+    for (var k = 0; k < WT.GROUPS.length; k++) {
+      var gr = WT.GROUPS[k];
+      if (!g.cfg.setBonus && !g.cfg.monoWin) break;
+      var mine = gr.filter(function (j) { return g.own[j] === me; }), miss = gr.filter(function (j) { return g.own[j] !== me; });
+      if (mine.length !== gr.length - 1 || miss.length !== 1) continue;
+      var i = miss[0], o = g.own[i];
+      if (o < 0 || g.players[o].out) continue;
+      var cash = Math.ceil((T[i].p + WT.buildValue(i, g.lv[i])) * 1.6 / 10) * 10;
+      if (p.money - cash < res + 100) continue;
+      var off = { type: 'offer', to: o, give: [], take: [i], cash: cash };
+      if (WT.legal(g, off)) return off;
+    }
+    return null;
+  }
+
   function choose(g, level, rng) {
     rng = rng || Math.random;
     var L = LEVEL[level] || LEVEL.normal;
-    var me = g.turn, p = g.players[me];
+    var me = WT.actor(g), p = g.players[me];
     var res = reserve(g, me, L);
 
     switch (g.phase) {
+      case 'auction': {
+        var at = g.pend.t, min = g.pend.min, val = holdValue(g, at, me) * (level === 'easy' ? 0.5 + rng() * 0.6 : 0.85);
+        var cap = Math.min(val, p.money - res * 0.8);
+        if (cap < min) return { type: 'bid', a: 0 };
+        var bid = Math.floor((min + (cap - min) * (level === 'easy' ? rng() : 0.6 + rng() * 0.4)) / 10) * 10;
+        return { type: 'bid', a: Math.max(min, Math.min(bid, Math.floor(p.money / 10) * 10)) };
+      }
+      case 'trade': return { type: 'answer', ok: judge(g, g.pend, me, level, rng) };
+      case 'festival': {
+        var bf = -1, bt = -1;
+        WT.owned(g, me).forEach(function (i) { var t = WT.baseToll(g, i); if (t > bt) { bt = t; bf = i; } });
+        return bf >= 0 ? { type: 'festival', t: bf } : { type: 'skip' };
+      }
+      case 'startPick': {
+        var bestT = -1, bs = 0;
+        WT.pickable(g, me).forEach(function (i) {
+          var cost, gain;
+          if (g.own[i] < 0) { cost = T[i].p; gain = holdValue(g, i, me); }
+          else { cost = WT.stepCost(i, g.lv[i]); gain = T[i].t[g.lv[i] + 1] - T[i].t[g.lv[i]] + cost * 0.3; }
+          if (p.money - cost < res) return;
+          if (gain > bs) { bs = gain; bestT = i; }
+        });
+        return bestT >= 0 ? { type: 'pick', t: bestT } : { type: 'skip' };
+      }
       case 'roll':
+        var idea = tradeIdea(g, me, L, level, rng);
+        if (idea) return idea;
         if (p.isl > 0 && p.esc > 0 && unownedLeft(g) >= 8) return { type: 'escape' };
         if (p.esc > 0 && unownedLeft(g) < 4 && level !== 'easy') return { type: 'sellCard' };
         return { type: 'roll' };
@@ -131,6 +207,6 @@
     return best;
   }
 
-  var WAI = { LEVEL: LEVEL, choose: choose, reserve: reserve, danger: danger };
+  var WAI = { LEVEL: LEVEL, choose: choose, reserve: reserve, danger: danger, judge: judge, holdValue: holdValue };
   if (typeof module !== 'undefined' && module.exports) module.exports = WAI; else root.WAI = WAI;
 })(this);

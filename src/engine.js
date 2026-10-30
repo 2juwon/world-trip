@@ -61,7 +61,20 @@
   // 건물 가치(그 단계까지 들인 돈): [0, 별장, 별장×2, 빌딩, 호텔]
   function buildValue(i, lv) { var b = T[i].b; if (!b || !lv) return 0; return [0, b[0], b[0] * 2, b[1], b[2]][lv]; }
   function stepCost(i, lv) { return buildValue(i, lv + 1) - buildValue(i, lv); } // lv → lv+1
-  function tollOf(g, i) { var t = T[i]; if (!t.t) return 0; return t.k === 'city' ? t.t[g.lv[i]] : t.t[0]; }
+  // 지역 세트: 같은 줄 반쪽의 도시들 (다 가지면 통행료 2배 — 판 모드 '지역 세트')
+  var GROUPS = [[1, 3, 4], [6, 8, 9], [11, 13, 14], [16, 18, 19], [21, 23, 24], [26, 27, 29], [31, 33, 34], [36, 37]];
+  var SPOTS = [5, 25, 39];
+  var GROUP_OF = []; GROUPS.forEach(function (gr, k) { gr.forEach(function (i) { GROUP_OF[i] = k; }); });
+  function groupOf(i) { return GROUP_OF[i] == null ? -1 : GROUP_OF[i]; }
+  function hasSet(g, pi, k) { return pi >= 0 && GROUPS[k].every(function (i) { return g.own[i] === pi; }); }
+  function setBonus(g, i) { var k = groupOf(i); return !!(g.cfg && g.cfg.setBonus) && k >= 0 && g.own[i] >= 0 && hasSet(g, g.own[i], k); }
+  function baseToll(g, i) { var t = T[i]; if (!t.t) return 0; return t.k === 'city' ? t.t[g.lv[i]] : t.t[0]; }
+  function tollOf(g, i) {
+    var a = baseToll(g, i);
+    if (setBonus(g, i)) a *= 2;
+    if (g.cfg && g.cfg.festival && g.fest === i) a *= 2;
+    return a;
+  }
 
   // ── 황금열쇠 ─────────────────────────────────────────
   // f: island 무인도 · space 우주여행 칸으로(이용료 없음) · world 세계일주 · go 그 칸으로 · back 뒤로
@@ -104,8 +117,16 @@
     buildOnBuy: false, // 산 차례에 바로 건물 (원작은 다음 방문부터)
     takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배, 호텔이 있으면 3배) 주고 인수
     rounds: 0,         // 0 = 끝까지(파산), n = n바퀴 뒤 총자산
-    timeMin: 0         // 0 = 시간 제한 없음, n분이 지나면 그 바퀴까지
+    timeMin: 0,        // 0 = 시간 제한 없음, n분이 지나면 그 바퀴까지
+    startPick: true,   // 출발 칸에 딱 멈추면 판에서 땅 하나를 사거나 내 도시에 건물
+    // 판 모드 (짜릿한 판)
+    setBonus: false,   // 지역 세트를 다 가지면 그 도시들 통행료 2배
+    monoWin: false,    // 관광지 3곳 또는 세트 3개를 가지면 바로 승리
+    festival: false,   // 사회복지기금 받는 칸에서 내 땅 하나에 축제 (통행료 2배, 다음 축제까지)
+    auction: false,    // 아무도 안 산 땅은 모두가 한 번씩 몰래 값을 써서 경매
+    trade: false       // 내 차례(굴리기 전)에 다른 사람에게 땅·돈 거래 제안 (차례마다 한 번)
   };
+  var MODE_KEYS = ['setBonus', 'monoWin', 'festival', 'auction', 'trade'];
 
   // ── 난수 (상태 안에 씨앗을 두어 다시 섞기도 결정적으로) ──
   function rngOf(g) {
@@ -134,7 +155,8 @@
       own: T.map(function () { return -1; }), lv: T.map(function () { return 0; }),
       fund: 0, deck: [], disc: [], rs: (seed >>> 0) || 1,
       turn: first || 0, first: first || 0, round: 1, phase: 'roll', pend: null, again: false,
-      last: [], out: [], winner: -1, ranks: null, lastRound: false, t0: now || 0, endWhy: ''
+      last: [], out: [], winner: -1, ranks: null, lastRound: false, t0: now || 0, endWhy: '',
+      fest: -1, offered: false
     };
     g.deck = shuffle(KEYS.map(function (_, i) { return i; }), rngOf(g));
     return g;
@@ -214,16 +236,39 @@
   }
   function keyIndex(kind) { for (var i = 0; i < KEYS.length; i++) if (KEYS[i].f === 'keep' && KEYS[i].v === kind) return i; return -1; }
 
-  function finish(g, why) {
+  function finish(g, why, w) {
     if (g.phase === 'over') return;
     g.phase = 'over'; g.pend = null; g.again = false; g.endWhy = why;
-    // 살아남은 사람은 총자산 순, 파산한 사람은 늦게 파산한 순
-    var liv = alive(g).sort(function (a, b) { return assets(g, b) - assets(g, a) || a - b; });
+    // 살아남은 사람은 총자산 순(독점 승리면 그 사람이 1등), 파산한 사람은 늦게 파산한 순
+    var liv = alive(g).sort(function (a, b) { return (b === w) - (a === w) || assets(g, b) - assets(g, a) || a - b; });
     var outs = g.out.slice().reverse();
     g.ranks = liv.concat(outs);
     g.winner = g.ranks[0];
     ev(g, { k: 'over', w: g.winner, why: why });
   }
+
+  // 독점 승리: 관광지 3곳 또는 지역 세트 3개
+  function monoOf(g, pi) {
+    if (SPOTS.every(function (i) { return g.own[i] === pi; })) return 'spots';
+    var c = 0; for (var k = 0; k < GROUPS.length; k++) if (hasSet(g, pi, k)) c++;
+    return c >= 3 ? 'sets' : '';
+  }
+  function checkMono(g, pi) {
+    if (!g.cfg.monoWin || g.phase === 'over' || pi < 0 || g.players[pi].out) return false;
+    var m = monoOf(g, pi);
+    if (!m) return false;
+    ev(g, { k: 'mono', p: pi, m: m });
+    finish(g, 'mono', pi);
+    return true;
+  }
+  // 새로 세트를 다 모았으면 알림
+  function noteSets(g, pi, before) {
+    if (!g.cfg.setBonus) return;
+    for (var k = 0; k < GROUPS.length; k++) if (!before[k] && hasSet(g, pi, k)) ev(g, { k: 'set', p: pi, s: k });
+  }
+  function setsOf(g, pi) { return GROUPS.map(function (_, k) { return hasSet(g, pi, k); }); }
+  // 땅을 얻은 뒤: 세트 알림 + 독점 승리 확인 (끝났으면 true)
+  function gained(g, pi, before) { noteSets(g, pi, before); return checkMono(g, pi); }
 
   // ── 움직이기 ─────────────────────────────────────────
   function walk(g, pi, steps, salary) { // 앞으로 steps칸, 출발을 지나면 월급
@@ -246,6 +291,7 @@
         if (o < 0) {
           if (p.money >= t.p) { g.phase = 'buy'; g.pend = { t: i }; return; }
           ev(g, { k: 'cant', p: pi, t: i });
+          if (startAuction(g, i)) return;
           return done(g);
         }
         if (o === pi) {
@@ -266,8 +312,12 @@
       case 'fund': {
         var f = g.fund; g.fund = 0; p.money += f;
         ev(g, { k: 'fund', p: pi, a: f });
+        if (g.cfg.festival && owned(g, pi).length) { g.phase = 'festival'; g.pend = {}; return; }
         return done(g);
       }
+      case 'start':
+        if (g.cfg.startPick && pickable(g, pi).length) { g.phase = 'startPick'; g.pend = {}; return; }
+        return done(g);
       case 'donate': {
         ev(g, { k: 'donate', p: pi, a: 150 });
         if (charge(g, pi, -2, 150, 'donate')) return done(g);
@@ -303,6 +353,54 @@
     if (g.phase === 'over') return;
     if (canTakeover(g, g.turn, i)) { g.phase = 'takeover'; g.pend = { t: i, a: takeoverPrice(g, i), from: g.own[i] }; return; }
     return done(g);
+  }
+
+  // ── 출발지 보너스 ──
+  function canPick(g, pi, i) {
+    if (i < 0 || i >= N || !isDeed(i)) return false;
+    var p = g.players[pi];
+    if (g.own[i] < 0) return p.money >= T[i].p;
+    return g.own[i] === pi && T[i].k === 'city' && g.lv[i] < 4 && p.money >= stepCost(i, g.lv[i]);
+  }
+  function pickable(g, pi) { var a = []; for (var i = 0; i < N; i++) if (canPick(g, pi, i)) a.push(i); return a; }
+
+  // ── 경매 ── 차례인 사람부터 한 번씩 몰래 값을 씀 (0 = 안 함), 가장 높은 값이 가져감 (같으면 먼저 쓴 사람)
+  function auctionMin(i) { return Math.max(10, Math.ceil(T[i].p / 2 / 10) * 10); }
+  function startAuction(g, i) {
+    if (!g.cfg.auction) return false;
+    var n = g.players.length, order = [], min = auctionMin(i);
+    for (var k = 0; k < n; k++) { var j = (g.turn + k) % n; if (!g.players[j].out && g.players[j].money >= min) order.push(j); }
+    if (!order.length) return false;
+    g.phase = 'auction'; g.pend = { t: i, min: min, order: order, bids: order.map(function () { return null; }) };
+    ev(g, { k: 'auctionstart', t: i, min: min });
+    return true;
+  }
+  function endAuction(g) {
+    var pd = g.pend, best = -1, ba = 0;
+    pd.order.forEach(function (j, k) { if (pd.bids[k] > ba) { ba = pd.bids[k]; best = j; } });
+    var bids = pd.order.map(function (j, k) { return { p: j, a: pd.bids[k] }; });
+    g.pend = null; g.phase = 'roll';
+    if (best < 0) { ev(g, { k: 'auction', t: pd.t, w: -1, a: 0, bids: bids }); return done(g); }
+    var before = setsOf(g, best);
+    g.players[best].money -= ba; g.own[pd.t] = best;
+    ev(g, { k: 'auction', t: pd.t, w: best, a: ba, bids: bids });
+    if (gained(g, best, before)) return;
+    return done(g);
+  }
+
+  // ── 거래 ──
+  function tradeValid(g, o) {
+    var from = o.from, to = o.to;
+    if (to === from || to < 0 || to >= g.players.length || g.players[to].out) return false;
+    if (!Array.isArray(o.give) || !Array.isArray(o.take) || o.give.length + o.take.length === 0 || o.give.length > 30 || o.take.length > 30) return false;
+    var seen = {};
+    for (var q = 0; q < o.give.length; q++) { var a = o.give[q]; if ((a | 0) !== a || a < 0 || a >= N || seen[a] || g.own[a] !== from) return false; seen[a] = 1; }
+    for (q = 0; q < o.take.length; q++) { var b = o.take[q]; if ((b | 0) !== b || b < 0 || b >= N || seen[b] || g.own[b] !== to) return false; seen[b] = 1; }
+    var c = o.cash;
+    if ((c | 0) !== c || c % 10) return false;
+    if (c > 0 && g.players[from].money < c) return false;
+    if (c < 0 && g.players[to].money < -c) return false;
+    return true;
   }
 
   function drawKey(g) {
@@ -407,7 +505,7 @@
 
   function nextTurn(g) {
     var n = g.players.length, cur = g.turn;
-    g.players[cur].dbl = 0; g.again = false; g.pend = null;
+    g.players[cur].dbl = 0; g.again = false; g.pend = null; g.offered = false;
     var nx = cur;
     for (var k = 1; k <= n; k++) { var j = (cur + k) % n; if (!g.players[j].out) { nx = j; break; } }
     var rel = function (i) { return (i - g.first + n) % n; };
@@ -428,6 +526,17 @@
     if (!a || g.phase === 'over') return false;
     var p = g.players[g.turn];
     switch (a.type) {
+      case 'pick': return g.phase === 'startPick' && canPick(g, g.turn, a.t);
+      case 'festival': return g.phase === 'festival' && (a.t | 0) === a.t && a.t >= 0 && a.t < N && g.own[a.t] === g.turn;
+      case 'bid': {
+        if (g.phase !== 'auction') return false;
+        var bp = g.players[actor(g)], v = a.a;
+        return (v | 0) === v && (v === 0 || (v >= g.pend.min && v <= bp.money && v % 10 === 0));
+      }
+      case 'offer':
+        return !!g.cfg.trade && g.phase === 'roll' && !g.offered && !p.out &&
+          tradeValid(g, { from: g.turn, to: a.to, give: a.give, take: a.take, cash: a.cash });
+      case 'answer': return g.phase === 'trade';
       case 'roll': return g.phase === 'roll' && a.d && a.d.length === 2 && a.d.every(function (x) { return x >= 1 && x <= 6 && (x | 0) === x; });
       case 'escape': return g.phase === 'roll' && p.isl > 0 && p.esc > 0;
       case 'space': return g.phase === 'space' && (a.to | 0) === a.to && a.to >= 0 && a.to < N && a.to !== SPACE;
@@ -437,7 +546,7 @@
         var i = g.pend.t, lv = a.lv | 0;
         return lv > g.lv[i] && lv <= 4 && p.money >= buildValue(i, lv) - buildValue(i, g.lv[i]);
       }
-      case 'skip': return g.phase === 'buy' || g.phase === 'build' || g.phase === 'takeover';
+      case 'skip': return g.phase === 'buy' || g.phase === 'build' || g.phase === 'takeover' || g.phase === 'startPick' || g.phase === 'festival';
       case 'takeover': return g.phase === 'takeover' && p.money >= g.pend.a;
       case 'toll': return g.phase === 'toll';
       case 'sell': return ['roll', 'buy', 'build', 'toll', 'space', 'pay', 'takeover'].indexOf(g.phase) >= 0 && g.own[a.t] === g.turn;
@@ -464,8 +573,52 @@
     if (!legal(g0, a)) return g0;
     var g = clone(g0);
     g.seq++; g.last = [];
-    var pi = g.turn, p = g.players[pi];
+    var pi = g.turn, p = g.players[pi], before;
     switch (a.type) {
+      case 'pick': {
+        var pt = a.t;
+        ev(g, { k: 'pick', p: pi, t: pt });
+        if (g.own[pt] < 0) {
+          before = setsOf(g, pi);
+          p.money -= T[pt].p; g.own[pt] = pi;
+          ev(g, { k: 'buy', p: pi, t: pt, a: T[pt].p });
+          if (gained(g, pi, before)) return g;
+          if (g.cfg.buildOnBuy && T[pt].k === 'city' && p.money >= stepCost(pt, 0)) { g.phase = 'build'; g.pend = { t: pt }; return g; }
+          done(g); return g;
+        }
+        g.phase = 'build'; g.pend = { t: pt };
+        return g;
+      }
+      case 'festival':
+        g.fest = a.t;
+        ev(g, { k: 'festival', p: pi, t: a.t });
+        done(g);
+        return g;
+      case 'bid': {
+        var pd0 = g.pend, kk = pd0.bids.indexOf(null), who = pd0.order[kk];
+        pd0.bids[kk] = a.a;
+        ev(g, { k: 'bid', p: who, pass: a.a === 0 });
+        if (pd0.bids.indexOf(null) < 0) endAuction(g);
+        return g;
+      }
+      case 'offer':
+        g.offered = true;
+        g.phase = 'trade'; g.pend = { from: pi, to: a.to, give: a.give.slice(), take: a.take.slice(), cash: a.cash };
+        ev(g, { k: 'offer', p: pi, to: a.to, give: a.give.slice(), take: a.take.slice(), cash: a.cash });
+        return g;
+      case 'answer': {
+        var o = g.pend;
+        g.pend = null; g.phase = 'roll';
+        if (!a.ok || !tradeValid(g, o)) { ev(g, { k: 'reject', p: o.to, to: o.from }); return g; }
+        var bf = setsOf(g, o.from), bt = setsOf(g, o.to);
+        o.give.forEach(function (i) { g.own[i] = o.to; });
+        o.take.forEach(function (i) { g.own[i] = o.from; });
+        g.players[o.from].money -= o.cash; g.players[o.to].money += o.cash;
+        ev(g, { k: 'trade', p: o.from, to: o.to, give: o.give, take: o.take, cash: o.cash });
+        if (gained(g, o.from, bf)) return g;
+        gained(g, o.to, bt);
+        return g;
+      }
       case 'roll': {
         var d = a.d, sum = d[0] + d[1], dbl = d[0] === d[1];
         ev(g, { k: 'roll', p: pi, d: d.slice(), isl: p.isl > 0 });
@@ -504,8 +657,10 @@
         return g;
       case 'buy': {
         var i = g.pend.t;
+        before = setsOf(g, pi);
         p.money -= T[i].p; g.own[i] = pi;
         ev(g, { k: 'buy', p: pi, t: i, a: T[i].p });
+        if (gained(g, pi, before)) return g;
         if (g.cfg.buildOnBuy && T[i].k === 'city' && p.money >= stepCost(i, 0)) { g.phase = 'build'; g.pend = { t: i }; return g; }
         done(g);
         return g;
@@ -517,10 +672,13 @@
         done(g);
         return g;
       }
-      case 'skip':
-        ev(g, { k: 'skip', p: pi, t: g.pend.t, ph: g.phase });
+      case 'skip': {
+        var sp = g.phase, st = g.pend.t;
+        ev(g, { k: 'skip', p: pi, t: st, ph: sp });
+        if (sp === 'buy' && startAuction(g, st)) return g;
         done(g);
         return g;
+      }
       case 'toll': {
         var pd = g.pend;
         g.pend = null;
@@ -532,9 +690,11 @@
       }
       case 'takeover': {
         var tk = g.pend, from = g.own[tk.t];
+        before = setsOf(g, pi);
         p.money -= tk.a; g.players[from].money += tk.a; g.own[tk.t] = pi;
         ev(g, { k: 'takeover', p: pi, from: from, t: tk.t, a: tk.a });
         g.pend = null;
+        if (gained(g, pi, before)) return g;
         if (T[tk.t].k === 'city' && g.lv[tk.t] < 4 && p.money >= stepCost(tk.t, g.lv[tk.t])) { g.phase = 'build'; g.pend = { t: tk.t }; return g; }
         done(g);
         return g;
@@ -588,20 +748,28 @@
     done(g);
   }
 
-  // 남에게 보낼 화면: 황금열쇠 더미 순서는 가림
+  // 남에게 보낼 화면: 황금열쇠 더미 순서와 경매에 쓴 값은 가림
   function viewFor(g) {
     var v = clone(g);
     v.deck = g.deck.length; v.disc = g.disc.length; v.rs = 0;
+    if (v.phase === 'auction' && v.pend) v.pend.bids = v.pend.bids.map(function (b) { return b == null ? null : -1; });
     return v;
   }
 
-  // 지금 결정할 사람 (언제나 차례인 사람)
-  function actor(g) { return g.phase === 'over' ? -1 : g.turn; }
+  // 지금 결정할 사람: 보통은 차례인 사람, 경매는 아직 값을 안 쓴 다음 사람, 거래는 제안받은 사람
+  function actor(g) {
+    if (g.phase === 'over') return -1;
+    if (g.phase === 'auction' && g.pend) { var k = g.pend.bids.indexOf(null); return k < 0 ? g.turn : g.pend.order[k]; }
+    if (g.phase === 'trade' && g.pend) return g.pend.to;
+    return g.turn;
+  }
 
   var WT = {
     T: T, N: N, KEYS: KEYS, START: START, ISLAND: ISLAND, FUND: FUND, SPACE: SPACE, DONATE: DONATE, SHUTTLE: SHUTTLE,
     SALARY: SALARY, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
-    sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf,
+    sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf, baseToll: baseToll,
+    GROUPS: GROUPS, SPOTS: SPOTS, MODE_KEYS: MODE_KEYS, groupOf: groupOf, hasSet: hasSet, setBonus: setBonus, monoOf: monoOf,
+    canPick: canPick, pickable: pickable, auctionMin: auctionMin, tradeValid: tradeValid,
     takeoverPrice: takeoverPrice, takeoverRate: takeoverRate, canTakeover: canTakeover,
     newGame: newGame, apply: apply, legal: legal, viewFor: viewFor, actor: actor,
     assets: assets, owned: owned, alive: alive, sellValueAll: sellValueAll, autoSellOrder: autoSellOrder, clone: clone
