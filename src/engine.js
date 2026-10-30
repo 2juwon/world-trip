@@ -118,7 +118,8 @@
     takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배, 호텔이 있으면 3배) 주고 인수
     rounds: 0,         // 0 = 끝까지(파산), n = n바퀴 뒤 총자산
     timeMin: 0,        // 0 = 시간 제한 없음, n분이 지나면 그 바퀴까지
-    startPick: true,   // 출발 칸에 딱 멈추면 판에서 땅 하나를 사거나 내 도시에 건물
+    startPick: true,   // 출발 칸에 딱 멈추면 판에서 땅 하나를 사거나 내 도시에 건물 (서울은 빼고)
+    salary: 200,       // 출발을 지나거나 멈출 때 월급: 200(20만) 또는 300(30만)
     // 판 모드 (짜릿한 판)
     setBonus: false,   // 지역 세트를 다 가지면 그 도시들 통행료 2배
     monoWin: false,    // 관광지 3곳 또는 세트 3개를 가지면 바로 승리
@@ -271,11 +272,13 @@
   function gained(g, pi, before) { noteSets(g, pi, before); return checkMono(g, pi); }
 
   // ── 움직이기 ─────────────────────────────────────────
+  function salaryOf(g) { return g.cfg && g.cfg.salary === 300 ? 300 : SALARY; } // 월급 20만(원작) 또는 30만
   function walk(g, pi, steps, salary) { // 앞으로 steps칸, 출발을 지나면 월급
     var p = g.players[pi], from = p.pos, passed = false;
     for (var s = 0; s < steps; s++) { p.pos = (p.pos + 1) % N; if (p.pos === START) passed = true; }
     ev(g, { k: 'move', p: pi, from: from, to: p.pos, n: steps });
-    if (passed && salary !== false) { p.money += SALARY; p.laps++; ev(g, { k: 'salary', p: pi, a: SALARY }); }
+    var pay = salaryOf(g);
+    if (passed && salary !== false) { p.money += pay; p.laps++; ev(g, { k: 'salary', p: pi, a: pay }); }
   }
   function jump(g, pi, to, salary) { // 그 칸까지 앞으로 (한 바퀴 돌아갈 수도)
     var p = g.players[pi], n = (to - p.pos + N) % N;
@@ -357,7 +360,7 @@
 
   // ── 출발지 보너스 ──
   function canPick(g, pi, i) {
-    if (i < 0 || i >= N || !isDeed(i)) return false;
+    if (i < 0 || i >= N || !isDeed(i) || i === 39) return false; // 서울은 출발지 보너스로 못 고름
     var p = g.players[pi];
     if (g.own[i] < 0) return p.money >= T[i].p;
     return g.own[i] === pi && T[i].k === 'city' && g.lv[i] < 4 && p.money >= stepCost(i, g.lv[i]);
@@ -766,7 +769,7 @@
 
   var WT = {
     T: T, N: N, KEYS: KEYS, START: START, ISLAND: ISLAND, FUND: FUND, SPACE: SPACE, DONATE: DONATE, SHUTTLE: SHUTTLE,
-    SALARY: SALARY, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
+    SALARY: SALARY, salaryOf: salaryOf, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
     sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf, baseToll: baseToll,
     GROUPS: GROUPS, SPOTS: SPOTS, MODE_KEYS: MODE_KEYS, groupOf: groupOf, hasSet: hasSet, setBonus: setBonus, monoOf: monoOf,
     canPick: canPick, pickable: pickable, auctionMin: auctionMin, tradeValid: tradeValid,

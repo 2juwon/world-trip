@@ -181,7 +181,7 @@
 
   function spaceScore(g, me, i, L, rng) {
     var p = g.players[me], res = reserve(g, me, L);
-    var s = 0, t = T[i], salary = i < WT.SPACE ? WT.SALARY : 0;
+    var s = 0, t = T[i], salary = i < WT.SPACE ? WT.salaryOf(g) : 0;
     var money = p.money + salary;
     if (WT.isDeed(i)) {
       var o = g.own[i];

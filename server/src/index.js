@@ -44,7 +44,7 @@ const die = () => 1 + (rand32() % 6);
 
 const MODE_KEYS = ['setBonus', 'monoWin', 'festival', 'auction', 'trade'];
 export const DEFAULT_SETTINGS = {
-  players: 2, start: 2930, triple: true, buildOnBuy: false, takeover: true, startPick: true, rounds: 20, timeMin: 0,
+  players: 2, start: 2930, triple: true, buildOnBuy: false, takeover: true, startPick: true, salary: 200, rounds: 20, timeMin: 0,
   setBonus: false, monoWin: false, festival: false, auction: false, trade: false,
   turnSec: 30, ai: 'normal', public: false,
 };
@@ -53,6 +53,7 @@ export function cleanSettings(cur, s, minPlayers) {
   if (!s || typeof s !== 'object') return out;
   if ([2, 3, 4].includes(s.players)) out.players = Math.max(s.players, minPlayers || 2);
   if ([2000, 2930, 5000].includes(s.start)) out.start = s.start;
+  if ([200, 300].includes(s.salary)) out.salary = s.salary;
   for (const k of ['triple', 'buildOnBuy', 'takeover', 'startPick', 'public', ...MODE_KEYS]) if (typeof s[k] === 'boolean') out[k] = s[k];
   // 판 길이: 바퀴와 시간은 하나만
   if ([0, 10, 20, 30].includes(s.rounds) && [0, 20, 30, 45, 60].includes(s.timeMin)) { out.rounds = s.rounds; out.timeMin = s.rounds ? 0 : s.timeMin; }
@@ -61,7 +62,7 @@ export function cleanSettings(cur, s, minPlayers) {
   return out;
 }
 const cfgOf = (s) => {
-  const c = { start: s.start, triple: s.triple, buildOnBuy: s.buildOnBuy, takeover: s.takeover !== false, startPick: s.startPick !== false, rounds: s.rounds, timeMin: s.timeMin };
+  const c = { start: s.start, triple: s.triple, buildOnBuy: s.buildOnBuy, takeover: s.takeover !== false, startPick: true, salary: s.salary === 300 ? 300 : 200, rounds: s.rounds, timeMin: s.timeMin };
   for (const k of MODE_KEYS) c[k] = !!s[k];
   return c;
 };

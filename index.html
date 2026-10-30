@@ -444,6 +444,23 @@ button:disabled{cursor:default; opacity:.45}
 .cashbox{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
 .cashbox button{border:1px solid var(--panel-line); background:var(--paper-2); border-radius:10px; padding:6px 9px; font-size:12.5px; font-weight:800}
 .cashbox b{flex:1; min-width:9em; text-align:center; font-size:14px}
+.mmap{display:grid; grid-template-columns:1.45fr repeat(9, 1fr) 1.45fr; grid-template-rows:1.45fr repeat(9, 1fr) 1.45fr; aspect-ratio:1; width:min(100%, 380px); margin:6px auto 8px; gap:2px; background:var(--paper-2); border-radius:12px; padding:4px; box-sizing:border-box}
+.mc{border:0; padding:0; border-radius:4px; background:color-mix(in srgb, var(--ink) 7%, var(--paper)); color:var(--ink-soft); font-size:clamp(7px, 2.2vw, 9.5px); font-weight:700; line-height:1.05; overflow:hidden; display:grid; place-items:center; text-align:center; word-break:keep-all; position:relative; min-width:0; min-height:0}
+.mc.nd{background:transparent; color:var(--ink-soft); opacity:.55}
+.mc.nd svg{width:60%; height:60%; fill:none; stroke:currentColor; stroke-width:2}
+.mc.th, .mc.mi{cursor:pointer; color:var(--ink); background:color-mix(in srgb, var(--oc) 22%, var(--paper)); box-shadow:inset 0 0 0 2px var(--oc)}
+.mc.on{background:var(--oc); color:#fff; box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--oc); z-index:1}
+.mc.on::after{content:"✓"; position:absolute; right:1px; top:-1px; font-size:9px}
+.mc.dim{opacity:.4}
+.mmc{grid-row:2 / 11; grid-column:2 / 11; display:grid; align-content:center; justify-items:center; gap:4px; padding:6px; font-size:12px; text-align:center; color:var(--ink-soft)}
+.mmc span{display:inline-flex; align-items:center; gap:5px; font-weight:700}
+.mmc i{width:10px; height:10px; border-radius:3px; background:var(--c)}
+.tsel{display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:28px; font-size:12.5px}
+.tsel > b{font-size:12.5px; color:var(--ink-soft); min-width:4.5em}
+.tile.trade-in{--tc:var(--ok)} .tile.trade-out{--tc:var(--warn)}
+.tile.trade-in, .tile.trade-out{box-shadow:inset 0 0 0 3px var(--tc), 0 0 16px var(--tc) !important; z-index:4; animation:tradeglow 1.2s ease-in-out infinite}
+@keyframes tradeglow{50%{box-shadow:inset 0 0 0 4px var(--tc), 0 0 26px var(--tc)}}
+@media (prefers-reduced-motion: reduce){ .tile.trade-in, .tile.trade-out{animation:none} }
 .tsum{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px 0}
 .tsum div{background:var(--paper-2); border-radius:12px; padding:8px 10px; font-size:12.5px}
 .tsum div b{display:block; font-size:12px; color:var(--ink-soft); margin-bottom:4px}
@@ -757,7 +774,8 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
     takeover: true,    // 통행료를 낸 뒤 그 땅을 웃돈(2배, 호텔이 있으면 3배) 주고 인수
     rounds: 0,         // 0 = 끝까지(파산), n = n바퀴 뒤 총자산
     timeMin: 0,        // 0 = 시간 제한 없음, n분이 지나면 그 바퀴까지
-    startPick: true,   // 출발 칸에 딱 멈추면 판에서 땅 하나를 사거나 내 도시에 건물
+    startPick: true,   // 출발 칸에 딱 멈추면 판에서 땅 하나를 사거나 내 도시에 건물 (서울은 빼고)
+    salary: 200,       // 출발을 지나거나 멈출 때 월급: 200(20만) 또는 300(30만)
     // 판 모드 (짜릿한 판)
     setBonus: false,   // 지역 세트를 다 가지면 그 도시들 통행료 2배
     monoWin: false,    // 관광지 3곳 또는 세트 3개를 가지면 바로 승리
@@ -910,11 +928,13 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
   function gained(g, pi, before) { noteSets(g, pi, before); return checkMono(g, pi); }
 
   // ── 움직이기 ─────────────────────────────────────────
+  function salaryOf(g) { return g.cfg && g.cfg.salary === 300 ? 300 : SALARY; } // 월급 20만(원작) 또는 30만
   function walk(g, pi, steps, salary) { // 앞으로 steps칸, 출발을 지나면 월급
     var p = g.players[pi], from = p.pos, passed = false;
     for (var s = 0; s < steps; s++) { p.pos = (p.pos + 1) % N; if (p.pos === START) passed = true; }
     ev(g, { k: 'move', p: pi, from: from, to: p.pos, n: steps });
-    if (passed && salary !== false) { p.money += SALARY; p.laps++; ev(g, { k: 'salary', p: pi, a: SALARY }); }
+    var pay = salaryOf(g);
+    if (passed && salary !== false) { p.money += pay; p.laps++; ev(g, { k: 'salary', p: pi, a: pay }); }
   }
   function jump(g, pi, to, salary) { // 그 칸까지 앞으로 (한 바퀴 돌아갈 수도)
     var p = g.players[pi], n = (to - p.pos + N) % N;
@@ -996,7 +1016,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
 
   // ── 출발지 보너스 ──
   function canPick(g, pi, i) {
-    if (i < 0 || i >= N || !isDeed(i)) return false;
+    if (i < 0 || i >= N || !isDeed(i) || i === 39) return false; // 서울은 출발지 보너스로 못 고름
     var p = g.players[pi];
     if (g.own[i] < 0) return p.money >= T[i].p;
     return g.own[i] === pi && T[i].k === 'city' && g.lv[i] < 4 && p.money >= stepCost(i, g.lv[i]);
@@ -1405,7 +1425,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
 
   var WT = {
     T: T, N: N, KEYS: KEYS, START: START, ISLAND: ISLAND, FUND: FUND, SPACE: SPACE, DONATE: DONATE, SHUTTLE: SHUTTLE,
-    SALARY: SALARY, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
+    SALARY: SALARY, salaryOf: salaryOf, SPACE_FEE: SPACE_FEE, ESC_SELL: ESC_SELL, LV_NAME: LV_NAME, DEFAULT_CFG: DEFAULT_CFG,
     sideOf: sideOf, isDeed: isDeed, buildValue: buildValue, stepCost: stepCost, tollOf: tollOf, baseToll: baseToll,
     GROUPS: GROUPS, SPOTS: SPOTS, MODE_KEYS: MODE_KEYS, groupOf: groupOf, hasSet: hasSet, setBonus: setBonus, monoOf: monoOf,
     canPick: canPick, pickable: pickable, auctionMin: auctionMin, tradeValid: tradeValid,
@@ -1599,7 +1619,7 @@ table.tolls{width:100%; border-collapse:collapse; font-size:13.5px}
 
   function spaceScore(g, me, i, L, rng) {
     var p = g.players[me], res = reserve(g, me, L);
-    var s = 0, t = T[i], salary = i < WT.SPACE ? WT.SALARY : 0;
+    var s = 0, t = T[i], salary = i < WT.SPACE ? WT.salaryOf(g) : 0;
     var money = p.money + salary;
     if (WT.isDeed(i)) {
       var o = g.own[i];
@@ -1662,7 +1682,7 @@ store.setup = store.setup || {};
 var SU = store.setup;
 SU.cpu = SU.cpu || { name:'', n:2, lv:'normal' };
 SU.local = SU.local || { n:3, seats:[{name:'',who:'human'},{name:'',who:'human'},{name:'',who:'normal'},{name:'',who:'normal'}] };
-SU.cfg = Object.assign({ start:2930, triple:true, buildOnBuy:false, takeover:true, startPick:true, len:'r20', mode:'classic', setBonus:false, monoWin:false, festival:false, auction:false, trade:false }, SU.cfg || {});
+SU.cfg = Object.assign({ salary:200, start:2930, triple:true, buildOnBuy:false, takeover:true, startPick:true, len:'r20', mode:'classic', setBonus:false, monoWin:false, festival:false, auction:false, trade:false }, SU.cfg || {});
 
 function rnd(){ try{ var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; }catch(e){ return Math.random(); } }
 function die(){ return 1 + Math.floor(rnd() * 6); }
@@ -2322,7 +2342,14 @@ function renderAct(){
 
 // ── 살지·지을지 고르는 창 (판 아래쪽에서 올라옴, 판은 그대로 보임) ──
 var DEC = { key:'', min:false, sel:0 };
-function closeDecide(){ var d = $('decide'); if (d.innerHTML){ d.innerHTML = ''; d.className = 'decide'; } }
+function closeDecide(){ var d = $('decide'); if (d.innerHTML){ d.innerHTML = ''; d.className = 'decide'; } tradeMark(null); }
+// 거래 제안을 받았을 때 판에서 받는 땅(초록)·주는 땅(주황)을 빛나게
+function tradeMark(o){
+  tileEls.forEach(function(d, i){
+    d.classList.toggle('trade-in', !!(o && o.give.indexOf(i) >= 0));
+    d.classList.toggle('trade-out', !!(o && o.take.indexOf(i) >= 0));
+  });
+}
 function renderDecide(){
   var d = $('decide');
   if (!G || busy || !myTurn() || ['buy', 'build', 'takeover', 'auction', 'trade'].indexOf(G.phase) < 0 || DEC.min){ closeDecide(); return; }
@@ -2413,6 +2440,18 @@ function tchip(i, on, fixed){
     '<small>' + (T[i].k === 'city' && lv ? WT.LV_NAME[lv] + ' · ' : '') + won(tileWorth(i)) + (WT.groupOf(i) >= 0 && G.cfg.setBonus ? ' · 세트 ' + setCount(i, G.own[i]) : '') + '</small></button>';
 }
 function setCount(i, who){ var gr = WT.GROUPS[WT.groupOf(i)]; return gr.filter(function(j){ return G.own[j] === who; }).length + '/' + gr.length; }
+// 작은 판 지도: 거래할 땅이 판 어디에 있는지
+function miniMap(state){ // state(i) → { cls, c } 또는 null
+  var h = '<div class="mmap">';
+  for (var i = 0; i < N; i++){
+    var rc = cellOf(i), st = WT.isDeed(i) ? state(i) : null, t = T[i];
+    var pos = 'grid-row:' + (rc[0] + 1) + ';grid-column:' + (rc[1] + 1);
+    if (!WT.isDeed(i)){ h += '<span class="mc nd" style="' + pos + '" aria-hidden="true"><svg viewBox="0 0 24 24">' + (ICONS[t.k] || '') + '</svg></span>'; continue; }
+    var nm = SHORT[t.n] || t.n; nm = nm.length > 3 ? nm.slice(0, 2) : nm;
+    h += '<button type="button" class="mc ' + (st ? st.cls : 'dim') + '" data-t="' + i + '" style="' + pos + (st && st.c ? ';--oc:' + st.c : '') + '" aria-label="' + esc(t.n) + '">' + esc(nm) + '</button>';
+  }
+  return h + '<div class="mmc" id="mmc"></div></div>';
+}
 var TR = null;
 function tradeSheet(){
   if (!canOffer()) return;
@@ -2426,8 +2465,13 @@ function tradeSheet(){
   var c = TR.cash;
   var html = '<h2>거래 제안</h2><p class="lead">땅과 돈을 골라 제안해요. 차례마다 한 번, 주사위를 굴리기 전에 할 수 있어요. 상대가 받으면 바로 바뀌어요.</p>' +
     '<div class="ptabs">' + others.map(function(j){ return '<button data-to="' + j + '" class="' + (j === to ? 'on' : '') + '" style="--c:' + pc(j) + '"><i></i>' + esc(G.players[j].name) + ' · ' + won(G.players[j].money) + '</button>'; }).join('') + '</div>' +
-    '<h3>내가 줄 땅</h3><div class="tchips" id="tGive">' + (my.length ? my.map(function(i){ return tchip(i, !!TR.give[i]); }).join('') : '<span class="hint">내 땅이 없어요</span>') + '</div>' +
-    '<h3>' + esc(G.players[to].name) + ' 님에게 받을 땅</h3><div class="tchips" id="tTake">' + (their.length ? their.map(function(i){ return tchip(i, !!TR.take[i]); }).join('') : '<span class="hint">땅이 없어요</span>') + '</div>' +
+    miniMap(function(i){
+      if (G.own[i] === to) return { cls:'th' + (TR.take[i] ? ' on' : ''), c:pc(to) };
+      if (G.own[i] === me) return { cls:'mi' + (TR.give[i] ? ' on' : ''), c:pc(me) };
+      return null;
+    }) +
+    '<div class="tsel" id="tTake"><b>받을 땅</b>' + (off.take.length ? off.take.map(function(i){ return tchip(i, true); }).join('') : '<span class="hint">지도에서 ' + esc(G.players[to].name) + ' 님 땅을 눌러요</span>') + '</div>' +
+    '<div class="tsel" id="tGive"><b>줄 땅</b>' + (off.give.length ? off.give.map(function(i){ return tchip(i, true); }).join('') : '<span class="hint">지도에서 내 땅을 눌러요 (안 줘도 돼요)</span>') + '</div>' +
     '<h3>돈</h3><div class="cashbox"><button data-c="-100">−10만</button><button data-c="-10">−1만</button><b>' + (c > 0 ? '내가 ' + won(c) + ' 줌' : c < 0 ? '내가 ' + won(-c) + ' 받음' : '돈은 안 오감') + '</b><button data-c="10">+1만</button><button data-c="100">+10만</button></div>' +
     '<p class="modehint">+는 내가 주는 돈, −는 받는 돈이에요.</p>' +
     '<div class="tsum"><div><b>내가 주는 것</b>' + (off.give.length || c > 0 ? won(giveV) + ' 어치 땅' + (c > 0 ? ' + 돈 ' + won(c) : '') : '<span class="none">없음</span>') + '</div><div><b>내가 받는 것</b>' + (off.take.length || c < 0 ? won(takeV) + ' 어치 땅' + (c < 0 ? ' + 돈 ' + won(-c) : '') : '<span class="none">없음</span>') + '</div></div>' +
@@ -2436,8 +2480,11 @@ function tradeSheet(){
   var sh = openSheet(html, 'trade');
   sh.scrollTop = keep;
   [].forEach.call(sh.querySelectorAll('[data-to]'), function(b){ b.onclick = function(){ TR.to = +b.dataset.to; TR.take = {}; tradeSheet(); }; });
-  [].forEach.call(sh.querySelectorAll('#tGive .tchip'), function(b){ b.onclick = function(){ var i = +b.dataset.t; if (TR.give[i]) delete TR.give[i]; else TR.give[i] = 1; snd('step'); tradeSheet(); }; });
-  [].forEach.call(sh.querySelectorAll('#tTake .tchip'), function(b){ b.onclick = function(){ var i = +b.dataset.t; if (TR.take[i]) delete TR.take[i]; else TR.take[i] = 1; snd('step'); tradeSheet(); }; });
+  var mmc = sh.querySelector('#mmc');
+  mmc.innerHTML = '<span><i style="--c:' + pc(to) + '"></i>' + esc(G.players[to].name) + ' 님 땅 ' + their.length + '곳</span><span><i style="--c:' + pc(me) + '"></i>내 땅 ' + my.length + '곳</span><small>눌러서 고르면 ✓</small>';
+  var flip = function(i){ if (G.own[i] === to){ if (TR.take[i]) delete TR.take[i]; else TR.take[i] = 1; } else if (G.own[i] === me){ if (TR.give[i]) delete TR.give[i]; else TR.give[i] = 1; } else return; snd('step'); tradeSheet(); };
+  [].forEach.call(sh.querySelectorAll('.mc[data-t]'), function(b){ b.onclick = function(){ flip(+b.dataset.t); }; });
+  [].forEach.call(sh.querySelectorAll('.tsel .tchip'), function(b){ b.onclick = function(){ flip(+b.dataset.t); }; });
   [].forEach.call(sh.querySelectorAll('[data-c]'), function(b){ b.onclick = function(){
     var v = TR.cash + (+b.dataset.c), hi = Math.floor(G.players[me].money / 10) * 10, lo = -Math.floor(G.players[TR.to].money / 10) * 10;
     TR.cash = Math.max(lo, Math.min(hi, v)); snd('step'); tradeSheet();
@@ -2454,11 +2501,12 @@ function renderAnswer(d){
   var o = G.pend, me = o.to;
   var list = function(a){ return a.length ? a.map(function(i){ return tchip(i, false, true); }).join('') : ''; };
   var gv = 0, tv = 0; o.give.forEach(function(i){ gv += tileWorth(i); }); o.take.forEach(function(i){ tv += tileWorth(i); });
+  tradeMark(o);
   var html = '<div class="dhead"><div><small>' + (humans() > 1 && MODE !== 'online' ? esc(G.players[me].name) + ' 님에게 · ' : '') + esc(G.players[o.from].name) + ' 님의 제안</small><b>거래할까요?</b></div><button class="dmin" id="dMin">판 보기</button></div>' +
     (MODE === 'online' && NET.room && NET.room.deadline ? '<div class="timer" id="tline2"><i></i></div>' : '') +
     '<div class="tsum"><div><b>내가 받는 것</b>' + (list(o.give) ? '<div class="tchips" style="margin:0">' + list(o.give) + '</div>' : '') + (o.cash > 0 ? '돈 <b class="num" style="display:inline;color:var(--ok)">+' + won(o.cash) + '</b>' : '') + (!o.give.length && o.cash <= 0 ? '<span class="none">없음</span>' : '') + '</div>' +
     '<div><b>내가 주는 것</b>' + (list(o.take) ? '<div class="tchips" style="margin:0">' + list(o.take) + '</div>' : '') + (o.cash < 0 ? '돈 <b class="num" style="display:inline;color:var(--warn)">−' + won(-o.cash) + '</b>' : '') + (!o.take.length && o.cash >= 0 ? '<span class="none">없음</span>' : '') + '</div></div>' +
-    '<p class="hint" style="margin:0">땅값+건물값으로 따지면 받는 땅 ' + won(gv) + ' · 주는 땅 ' + won(tv) + '. 건물은 땅과 함께 넘어가요.</p>' +
+    '<p class="hint" style="margin:0">판에서 <b style="color:var(--ok)">초록</b> 칸은 받는 땅, <b style="color:var(--warn)">주황</b> 칸은 주는 땅이에요. 땅값+건물값으로 받는 땅 ' + won(gv) + ' · 주는 땅 ' + won(tv) + ', 건물도 함께 넘어가요.</p>' +
     '<div class="row"><button class="btn main grow" id="dYes">받을래요</button><button class="btn grow" id="dNo">거절</button></div>';
   var first = !d.innerHTML;
   d.className = 'decide' + (first ? ' in' : '');
@@ -2502,7 +2550,8 @@ function say(e, g){
     case 'spaceport': return P(e.p) + ' 님이 우주 정거장에 왔어요. 다음 차례에 원하는 곳으로!';
     case 'fly': return P(e.p) + ' 님이 ' + tn(e.to) + '(으)로 날아가요';
     case 'cant': return P(e.p) + ' 님은 ' + tn(e.t) + '을(를) 살 돈이 모자라요';
-    case 'skip': return P(e.p) + ' 님이 ' + tn(e.t) + (e.ph === 'buy' ? '을(를) 사지 않았어요' : e.ph === 'takeover' ? '을(를) 인수하지 않았어요' : '에 짓지 않았어요');
+    case 'skip': if (e.ph === 'startPick') return P(e.p) + ' 님은 출발지 보너스를 쓰지 않았어요'; if (e.ph === 'festival') return P(e.p) + ' 님은 축제를 열지 않았어요';
+      return P(e.p) + ' 님이 ' + tn(e.t) + (e.ph === 'buy' ? '을(를) 사지 않았어요' : e.ph === 'takeover' ? '을(를) 인수하지 않았어요' : '에 짓지 않았어요');
     case 'takeover': return P(e.p) + ' 님이 ' + P(e.from) + ' 님의 ' + tn(e.t) + '을(를) ' + won(e.a) + '에 인수했어요!';
     case 'vip': return P(e.p) + ' 님이 우대권으로 통행료 ' + won(e.a) + '을 아꼈어요';
     case 'sell': return P(e.p) + ' 님이 ' + tn(e.t) + (e.lv < 0 ? ' 땅을' : '의 건물을') + ' 은행에 팔았어요 (+' + won(e.a) + ')';
@@ -2708,7 +2757,8 @@ async function play(g){
   var evs = g.last || [];
   for (var k = 0; k < evs.length; k++){
     if (gen !== GEN) return false;
-    var e = evs[k], line = say(e, g);
+    var e = evs[k], line = '';
+    try{ line = say(e, g); }catch(x){ line = ''; } // 문장 하나가 틀려도 판은 멈추지 않게
     if (line && e.k !== 'roll') logLine(line);
     switch (e.k){
       case 'roll': setNews(line); logLine(line); await rollAnim(e.d); await wait(150); break;
@@ -2968,7 +3018,7 @@ function tileSheet(i){
   } else {
     html = '<h2>' + esc(t.n) + '</h2>';
     var d = {
-      start:'지나가거나 멈추면 월급 20만 원을 받아요.' + (G && G.cfg.startPick !== false ? ' 딱 멈추면 출발지 보너스로 판에서 땅 하나를 사거나 내 도시에 건물을 지을 수 있어요.' : ''),
+      start:'지나가거나 멈추면 월급 ' + won(G ? WT.salaryOf(G) : WT.SALARY) + '을 받아요.' + (G && G.cfg.startPick !== false ? ' 딱 멈추면 출발지 보너스로 판에서 땅 하나를 사거나 내 도시에 건물을 지을 수 있어요(서울은 빼고).' : ''),
       island:'멈추면 세 번 갇혀요. 자기 차례에 더블이 나오면 바로 나가요. 무전기가 있으면 언제든 나갈 수 있어요.',
       fund:'복지기금 내는 곳에 모인 돈을 모두 받아요. 지금 ' + (G ? won(G.fund) : '0') + ' 모여 있어요.' + (G && G.cfg.festival ? ' 축제 모드: 여기 서면 내 땅 하나에 축제를 열어요(통행료 2배).' : ''),
       space:'멈추면 다음 차례에 판의 아무 칸으로나 갈 수 있어요. 왕복선 주인이 있으면 이용료 20만 원을 내요.',
@@ -3047,8 +3097,10 @@ function rulesBox(box, c, set, disabled){
   var md = modeOf(c);
   box.innerHTML = '<div class="ctl"><span>판 모드' + qmark('판 모드', '클래식: 원작 규칙 그대로 해요.\n짜릿한 판: 지역 세트 보너스·독점 승리·축제·경매·땅 거래를 모두 켜요. 판이 빨리 뒤집혀요.\n직접 고르기: 넣고 싶은 것만 골라요.') + '</span><div class="seg" id="rMode"></div><div id="rModes"></div></div>' +
     '<div class="ctl"><span>한 판 길이' + qmark('한 판 길이', LEN_HINT) + '</span><div class="seg" id="rLen"></div></div>' +
-    '<div class="ctl"><span>시작 자금</span><div class="seg" id="rStart"></div></div><div id="rSw" style="margin-top:10px"></div>';
+    '<div class="ctl"><span>시작 자금</span><div class="seg" id="rStart"></div></div>' +
+    '<div class="ctl"><span>월급' + qmark('월급 · 출발지 보너스', '출발을 지나거나 멈추면 월급을 받아요. 20만(원작) 또는 30만 중에 골라요.\n출발 칸에 딱 멈추면 출발지 보너스도 받아요: 판에서 땅 하나를 골라 사거나(빈 땅), 내 도시에 건물을 지어요. 서울은 고를 수 없어요.') + '</span><div class="seg" id="rSal"></div></div><div id="rSw" style="margin-top:10px"></div>';
   seg(box.querySelector('#rLen'), LENS, c.len, function(v){ set('len', v); }, disabled);
+  seg(box.querySelector('#rSal'), [[200,'20만'],[300,'30만']], c.salary === 300 ? 300 : 200, function(v){ set('salary', v); }, disabled);
   seg(box.querySelector('#rStart'), [[2000,'200만'],[2930,'293만 (원작)'],[5000,'500만']], c.start, function(v){ set('start', v); }, disabled);
   seg(box.querySelector('#rMode'), [['classic','클래식'],['hot','짜릿한 판'],['custom','직접 고르기']], md, function(v){ set('modes', modeSet(v)); }, disabled);
   var mb = box.querySelector('#rModes');
@@ -3056,7 +3108,6 @@ function rulesBox(box, c, set, disabled){
   else if (md === 'custom') MODES.forEach(function(m){ mb.appendChild(swRow(m[1], m[2], !!c[m[0]], function(){ var o = { mode:'custom' }; o[m[0]] = !c[m[0]]; set('modes', o); }, disabled)); });
   bindHelp(box);
   var sw = box.querySelector('#rSw');
-  sw.appendChild(swRow('출발지 보너스', '출발 칸에 딱 멈추면 판에서 땅 하나를 골라 사거나(빈 땅), 건물을 지을 수 있어요(내 도시)', c.startPick !== false, function(){ set('startPick', c.startPick === false); }, disabled));
   sw.appendChild(swRow('더블 세 번이면 무인도', '한 차례에 더블이 세 번 나오면 무인도로 가요', !!c.triple, function(){ set('triple', !c.triple); }, disabled));
   sw.appendChild(swRow('땅 인수 (웃돈 2배)', '남의 땅에서 통행료를 낸 뒤, 땅값과 건물값의 2배를 주면 그 땅을 가져와요. 호텔이 있는 땅은 3배', c.takeover !== false, function(){ set('takeover', c.takeover === false); }, disabled));
   sw.appendChild(swRow('산 차례에 바로 건물', '원작은 땅을 산 뒤 다시 왔을 때부터 지어요. 켜면 산 차례에도 지을 수 있어요', !!c.buildOnBuy, function(){ set('buildOnBuy', !c.buildOnBuy); }, disabled));
@@ -3149,7 +3200,7 @@ function startLocal(tab){
       ps.push({ name:(s.name || '').trim() || (s.who === 'human' ? NAMES[j] : BOTS[j]), ai:s.who === 'human' ? null : s.who });
     }
   }
-  var cfg = lenToCfg(SU.cfg.len, { start:SU.cfg.start, triple:SU.cfg.triple, buildOnBuy:SU.cfg.buildOnBuy, takeover:SU.cfg.takeover !== false, startPick:SU.cfg.startPick !== false });
+  var cfg = lenToCfg(SU.cfg.len, { start:SU.cfg.start, triple:SU.cfg.triple, buildOnBuy:SU.cfg.buildOnBuy, takeover:SU.cfg.takeover !== false, startPick:true, salary:SU.cfg.salary === 300 ? 300 : 200 });
   MODES.forEach(function(m){ cfg[m[0]] = !!SU.cfg[m[0]]; });
   var seed = Math.floor(rnd() * 4294967296);
   newEra();
@@ -3238,7 +3289,7 @@ function pawnSheet(){
 function rulesSheet(){
   var html = '<h2>여행 규칙</h2><ol class="rules">' +
     '<li>주사위 두 개를 굴려 나온 합만큼 가요. 더블이면 한 번 더 굴려요.</li>' +
-    '<li>출발을 지나거나 멈추면 월급 20만 원.</li>' +
+    '<li>출발을 지나거나 멈추면 월급 ' + won(G && !DEMO ? WT.salaryOf(G) : WT.SALARY) + ' (설정에서 30만도 골라요).</li>' +
     '<li>주인 없는 도시·관광지·탈것에 서면 살 수 있어요. 남의 땅에 서면 통행료를 내요.</li>' +
     '<li>내 도시에 다시 서면 별장(2채까지) → 빌딩 → 호텔로 키울 수 있어요. 높을수록 통행료가 커져요. 제주도·부산·서울과 탈것에는 건물을 짓지 못해요.</li>' +
     '<li>땅 인수(설정): 남의 땅에서 통행료를 낸 뒤 땅값과 건물값의 2배(호텔이 있는 땅은 3배)를 주인에게 주면 그 땅을 가져와요.</li>' +
@@ -3247,7 +3298,7 @@ function rulesSheet(){
     '<li>복지기금 내는 곳에서 15만 원을 내고, 받는 곳에 선 사람이 모인 돈을 다 가져가요.</li>' +
     '<li>우주여행 칸에 서면 다음 차례에 원하는 칸으로 날아가요. 왕복선 주인에게 이용료 20만 원.</li>' +
     '<li>돈이 모자라면 땅·건물을 은행에 들인 돈의 반값에 팔아 갚아요. 그래도 모자라면 파산.</li>' +
-    '<li>출발지 보너스(설정): 출발 칸에 딱 멈추면 판에서 땅 하나를 골라 사거나(빈 땅), 내 도시에 건물을 지어요.</li>' +
+    '<li>출발지 보너스: 출발 칸에 딱 멈추면 판에서 땅 하나를 골라 사거나(빈 땅), 내 도시에 건물을 지어요. 서울은 고를 수 없어요.</li>' +
     '<li>한 명만 남으면 끝. 바퀴·시간을 정했으면 그때 총자산(현금+땅+건물 값)이 가장 많은 사람이 1등.</li></ol>' +
     '<h3>짜릿한 판 (판 모드)</h3><ol class="rules">' + MODES.map(function(m){ return '<li><b>' + m[1] + '</b>' + (G && !DEMO ? (G.cfg[m[0]] ? ' · 이번 판 켬' : ' · 이번 판 끔') : '') + ' — ' + m[2] + '.</li>'; }).join('') +
     '<li>지역 세트: ' + WT.GROUPS.map(function(gr, k){ return setName(k); }).join(' / ') + '</li></ol>' +
@@ -3436,7 +3487,7 @@ function lobbySheet(){
   seg(sh.querySelector('#wN'), [[2,'2명'],[3,'3명'],[4,'4명']], n, function(v){ set('players', v); }, !host);
   seg(sh.querySelector('#wT'), [[0,'없음'],[15,'15초'],[20,'20초'],[30,'30초'],[60,'60초']], S.turnSec, function(v){ set('turnSec', v); }, !host);
   seg(sh.querySelector('#wAi'), [['easy','느긋한'],['normal','야무진']], S.ai, function(v){ set('ai', v); }, !host);
-  var rc = { len:cfgToLen(S), start:S.start, triple:S.triple, buildOnBuy:S.buildOnBuy, takeover:S.takeover !== false, startPick:S.startPick !== false, mode:NET.lobbyMode || '' };
+  var rc = { len:cfgToLen(S), start:S.start, triple:S.triple, buildOnBuy:S.buildOnBuy, takeover:S.takeover !== false, salary:S.salary, mode:NET.lobbyMode || '' };
   MODES.forEach(function(m){ rc[m[0]] = !!S[m[0]]; });
   rulesBox(sh.querySelector('#wRules'), rc, function(k, v){
     if (k === 'len'){ var c = lenToCfg(v, {}); NET.send({ t:'settings', settings:{ rounds:c.rounds, timeMin:c.timeMin } }); }

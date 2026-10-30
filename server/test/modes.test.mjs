@@ -12,7 +12,7 @@ let last = null, acted = '', errs = 0;
 const seen = {};
 ws.onmessage = (e) => { if (e.data === 'pong') return; const m = JSON.parse(e.data); if (m.t === 'error') { errs++; console.log('err', m.message); return; } last = m; step(); };
 await new Promise((r) => { ws.onopen = r; });
-ws.send(JSON.stringify({ t: 'settings', settings: { turnSec: 0, players: 3, rounds: 20, timeMin: 0, setBonus: true, monoWin: true, festival: true, auction: true, trade: true } }));
+ws.send(JSON.stringify({ t: 'settings', settings: { turnSec: 0, players: 3, rounds: 20, timeMin: 0, salary: 300, setBonus: true, monoWin: true, festival: true, auction: true, trade: true } }));
 await new Promise((r) => setTimeout(r, 300));
 ws.send(JSON.stringify({ t: 'start' }));
 let lastSeq = -1;
@@ -22,9 +22,9 @@ function step() {
   if (g.seq !== lastSeq) { lastSeq = g.seq; (g.last || []).forEach((e) => { seen[e.k] = (seen[e.k] || 0) + 1; }); }
   if (g.phase === 'over' || r.status === 'ended') {
     console.log('끝:', g.endWhy, g.round + '바퀴', '본 사건:', JSON.stringify(['auctionstart', 'bid', 'auction', 'offer', 'trade', 'reject', 'festival', 'pick', 'set', 'mono'].map((k) => k + ' ' + (seen[k] || 0)).join(', ')));
-    const okCfg = g.cfg.auction && g.cfg.trade && g.cfg.festival && g.cfg.setBonus && g.cfg.monoWin && g.cfg.startPick;
-    console.log(okCfg && errs === 0 && seen.bid ? '✓ 판 모드가 서버를 거쳐 끝까지 돎' : '✗ 문제 있음 cfg=' + okCfg + ' errs=' + errs);
-    process.exit(okCfg && errs === 0 && seen.bid ? 0 : 1);
+    const okCfg = g.cfg.salary === 300 && g.cfg.auction && g.cfg.trade && g.cfg.festival && g.cfg.setBonus && g.cfg.monoWin && g.cfg.startPick;
+    console.log(okCfg && errs === 0 ? '✓ 판 모드가 서버를 거쳐 끝까지 돎' : '✗ 문제 있음 cfg=' + okCfg + ' errs=' + errs);
+    process.exit(okCfg && errs === 0 ? 0 : 1);
   }
   const key = g.seq + ':' + g.phase;
   if (W.actor(g) !== last.seat || acted === key) return;

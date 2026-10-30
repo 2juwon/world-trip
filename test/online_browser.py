@@ -18,7 +18,7 @@ AUTO = """() => {
   if (G.phase === 'startPick' || G.phase === 'festival') { const c = document.querySelector('.tile.cando'); if (c && SEL < 0) c.click(); const k = b(G.phase === 'startPick' ? 'aPick' : 'aFest'); if (k && !k.disabled) k.click(); else b('aSkip').click(); return; }
   if (G.phase === 'auction') { const d = b('dBid'); if (d) d.click(); else { const o = b('aOpen'); o && o.click(); } return; }
   if (G.phase === 'trade') { const y = b('dNo'); if (y) y.click(); else { const o = b('aOpen'); o && o.click(); } return; }
-  if (G.phase === 'roll' && G.cfg.trade && !G.offered && b('aTrade') && !window.__offered) { window.__offered = 1; b('aTrade').click(); const tk = document.querySelector('#tTake .tchip'); if (tk) tk.click(); const go = b('trGo'); if (go && !go.disabled) go.click(); else closeSheet(); return; }
+  if (G.phase === 'roll' && G.cfg.trade && !G.offered && b('aTrade') && !window.__offered) { window.__offered = 1; b('aTrade').click(); const tk = document.querySelector('.mc.th'); if (tk) tk.click(); const go = b('trGo'); if (go && !go.disabled) go.click(); else closeSheet(); return; }
   if (G.phase === 'build') { const o = document.querySelector('#decide .bopt:not([disabled])'); if (o && !DEC.sel) o.click(); const bb = b('dBuild'); (bb && !bb.disabled ? bb : b('dSkip')).click(); return; }
   if (G.phase === 'buy') { const e = b('dBuy'); if (e) { e.click(); return; } }
   if (G.phase === 'pay') { if (!SELL) { const e = b('aSell'); if (e) e.click(); } else { const au = b('sAuto'); if (au) au.click(); const go = b('sGo'); if (go && !go.disabled) go.click(); else b('sCancel').click(); } return; }

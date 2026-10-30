@@ -299,10 +299,10 @@ t('출발 칸에 딱 멈추면 빈 땅을 사거나 내 도시에 지을 수 있
   g = roll(g, 3, 3); // 34 → 40 = 출발 (더블)
   eq(g.players[0].pos, 0); eq(g.phase, 'startPick');
   eq(g.players[0].money, 2930 + 200);
-  ok(W.legal(g, { type: 'pick', t: 39 }), '빈 서울'); ok(W.legal(g, { type: 'pick', t: 1 }), '내 타이베이');
+  ok(!W.legal(g, { type: 'pick', t: 39 }), '서울은 안 됨'); ok(W.legal(g, { type: 'pick', t: 25 }), '빈 부산'); ok(W.legal(g, { type: 'pick', t: 1 }), '내 타이베이');
   ok(!W.legal(g, { type: 'pick', t: 2 }), '황금열쇠 칸은 안 됨');
-  let a = W.apply(g, { type: 'pick', t: 39 });
-  eq(a.own[39], 0); eq(a.players[0].money, 3130 - 1000); eq(a.phase, 'roll'); eq(a.turn, 0, '더블이라 한 번 더');
+  let a = W.apply(g, { type: 'pick', t: 25 });
+  eq(a.own[25], 0); eq(a.players[0].money, 3130 - 500); eq(a.phase, 'roll'); eq(a.turn, 0, '더블이라 한 번 더');
   let b = W.apply(g, { type: 'pick', t: 1 });
   eq(b.phase, 'build'); eq(b.pend.t, 1);
   b = W.apply(b, { type: 'build', lv: 4 });
@@ -387,5 +387,11 @@ t('거래: 제안 → 받은 사람이 수락하면 땅·돈이 오감, 차례�
   ok(!W.legal(g2({ trade: false }), off));
 });
 
+t('월급 30만 설정', () => {
+  let g = st(g2({ salary: 300 }), (c) => { c.players[0].pos = 35; });
+  g = roll(g, 3, 3); eq(g.players[0].money, 2930 + 300);
+  let h = st(g2(), (c) => { c.players[0].pos = 35; });
+  h = roll(h, 3, 3); eq(h.players[0].money, 2930 + 200);
+});
 console.log(`\n규칙 시험 ${pass}개 통과` + (fail ? `, ${fail}개 실패` : ''));
 if (fail) process.exit(1);
