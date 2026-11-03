@@ -100,10 +100,7 @@ button:disabled{cursor:default; opacity:.45}
 /* 판 — 탁자 위에 비스듬히 놓인 판. 말·건물·주사위는 판 위에 서 있음. 메뉴에서 '위에서 보기'로 평평하게 */
 .boardwrap{grid-area:board; justify-self:center; width:min(100%, 760px); min-width:0}
 @media (min-width:920px){ .boardwrap{width:min(100%, calc(100vh - 175px), 760px); justify-self:center; align-self:start; margin-top:8px} }
-.stage{--tilt:26deg; perspective:1600px; perspective-origin:50% 20%; position:relative; padding-bottom:3%; transform-origin:0 0; transition:transform .5s cubic-bezier(.3,.8,.3,1)}
-/* 화면 따라가기: 움직이는 말 쪽으로 확대 */
-.boardwrap.cam{overflow:hidden; border-radius:12px}
-@media (prefers-reduced-motion: reduce){ .stage{transition:none} }
+.stage{--tilt:26deg; perspective:1600px; perspective-origin:50% 20%; position:relative; padding-bottom:3%}
 @media (min-width:920px){ .stage{--tilt:30deg} }
 .stage.flat{--tilt:0deg; padding-bottom:0}
 .stage::before{content:""; position:absolute; left:6%; right:6%; bottom:0; height:12%; border-radius:50%; background:radial-gradient(closest-side, rgba(10,20,40,.35), transparent); pointer-events:none}
@@ -1702,7 +1699,6 @@ function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch
 var store = load();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
 if (store.sound == null) store.sound = true;
-try{ if (store.cam == null && matchMedia('(prefers-reduced-motion: reduce)').matches) store.cam = false; }catch(e){}
 store.setup = store.setup || {};
 var SU = store.setup;
 SU.cpu = SU.cpu || { name:'', n:2, lv:'normal' };
@@ -2726,50 +2722,11 @@ async function rollAnim(d){
   anims.forEach(function(a){ a.forEach(function(x){ try{ x.cancel(); }catch(e){} }); });
   showDice(d);
 }
-// ── 화면 따라가기: 말이 움직일 때 그 말 쪽으로 확대해서 따라감 ──
-var CAM = { z:0, x:0, y:0, map:null, out:0 };
-function camOn(){ return store.cam !== false && !SELL && !DEMO && SPEED > 0.2; }
-function camMap(){ // 확대하지 않았을 때 칸마다 화면 위치 (판 바깥 틀 기준) — 한 번 재 두고 크기가 바뀌면 다시
-  if (CAM.map) return CAM.map;
-  var st = $('stage'), wrap = st.parentNode, keepT = st.style.transform, keepTr = st.style.transition;
-  st.style.transition = 'none'; st.style.transform = ''; void st.offsetWidth;
-  var wr = wrap.getBoundingClientRect();
-  CAM.map = tileEls.map(function(d){ var r = d.getBoundingClientRect(); return [r.left + r.width / 2 - wr.left, r.top + r.height / 2 - wr.top]; });
-  st.style.transform = keepT; void st.offsetWidth; st.style.transition = keepTr;
-  return CAM.map;
-}
-function camFollow(i, slow){
-  if (!camOn() || i == null) return;
-  clearTimeout(CAM.out);
-  var st = $('stage'), wrap = st.parentNode;
-  var pt = camMap()[i]; if (!pt) return;
-  var z = innerWidth >= 920 ? 1.65 : 1.9, W = wrap.clientWidth, H = st.offsetHeight;
-  // 말이 칸 위에 서 있으니 칸보다 조금 위를 가운데로, 판 가장자리 칸도 잘리지 않게 바깥 여유를 둠
-  var x = W / 2 - z * pt[0], y = H * 0.58 - z * pt[1], px = W * 0.1, py = H * 0.12;
-  x = Math.min(px, Math.max(W - z * W - px, x)); y = Math.min(py, Math.max(H - z * H - H * 0.06, y));
-  CAM.z = z; CAM.x = x; CAM.y = y;
-  wrap.classList.add('cam');
-  st.style.transition = slow ? 'transform .8s cubic-bezier(.3,.8,.3,1)' : '';
-  st.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + z + ')';
-}
-function camBack(delay){
-  if (!CAM.z) return;
-  clearTimeout(CAM.out);
-  CAM.out = setTimeout(function(){
-    var st = $('stage');
-    st.style.transition = ''; st.style.transform = '';
-    CAM.z = 0;
-    setTimeout(function(){ if (!CAM.z) st.parentNode.classList.remove('cam'); }, 520);
-  }, delay == null ? ms(650) : delay);
-}
-function camReset(){ clearTimeout(CAM.out); CAM.z = 0; CAM.map = null; var st = $('stage'); st.style.transition = 'none'; st.style.transform = ''; st.parentNode.classList.remove('cam'); void st.offsetWidth; st.style.transition = ''; }
-
 async function stepAnim(p, from, n){
   var dir = n < 0 ? -1 : 1, cnt = Math.abs(n), per = cnt >= 40 ? 28 : 120, e = tokEls[p];
   for (var s = 0; s < cnt; s++){
     DP[p] = (DP[p] + dir + N) % N;
     placeToks(); renderTiles();
-    camFollow(DP[p]);
     if (cnt < 40){ e.classList.remove('hop'); void e.offsetWidth; e.classList.add('hop'); }
     if (s % (cnt >= 40 ? 4 : 1) === 0) snd('step');
     await wait(per);
@@ -2778,7 +2735,6 @@ async function stepAnim(p, from, n){
 }
 async function flyAnim(p, to, ms0){
   var e = tokEls[p]; e.classList.add('fly');
-  camFollow(to, true);
   DP[p] = to; placeToks(); renderTiles();
   snd('fly');
   await wait(ms0 || 750);
@@ -2861,7 +2817,7 @@ function showKey(id, p){
 
 // 새 판·온라인·나가기 때: 돌던 움직임과 컴퓨터 차례를 끊음
 function newEra(){
-  GEN++; clearTimeout(timer); busy = false; autoPay = false; PAUSED = false; HOLD = false; camReset();
+  GEN++; clearTimeout(timer); busy = false; autoPay = false; PAUSED = false; HOLD = false;
   if (keySkip) keySkip(); if (deedSkip) deedSkip();
 }
 async function play(g){
@@ -2885,12 +2841,11 @@ async function play(g){
         if (k > 0 && evs[k - 1].k === 'fly' && evs[k - 1].p === e.p){ DP[e.p] = e.to; placeToks(); break; }
         if (Math.abs(e.n) >= 40){ setNews(pn2(g, e.p) + ' 세계일주!'); }
         var pin = showPoi(e.to, e.p, e.n);
-        if (Math.abs(e.n) < 40) camFollow(DP[e.p] != null ? DP[e.p] : e.from);
         await wait(Math.abs(e.n) >= 40 ? 200 : 420);
-        await stepAnim(e.p, e.from, e.n); hidePoi(pin); camBack(); await wait(120); break;
+        await stepAnim(e.p, e.from, e.n); hidePoi(pin); await wait(120); break;
       }
-      case 'warp': { var pin2 = showPoi(e.to, e.p); await wait(300); await flyAnim(e.p, e.to, 600); hidePoi(pin2); camBack(); break; }
-      case 'fly': { setNews(line); var pin3 = showPoi(e.to, e.p); await wait(350); await flyAnim(e.p, e.to, 800); hidePoi(pin3); camBack(); break; }
+      case 'warp': { var pin2 = showPoi(e.to, e.p); await wait(300); await flyAnim(e.p, e.to, 600); hidePoi(pin2); break; }
+      case 'fly': { setNews(line); var pin3 = showPoi(e.to, e.p); await wait(350); await flyAnim(e.p, e.to, 800); hidePoi(pin3); break; }
       case 'salary': money[e.p] += e.a; setMoney(e.p, money[e.p]); floatAt(e.p, '+' + won(e.a), true); snd('coin'); break;
       case 'key': setNews(line); await showKey(e.c, e.p); break;
       case 'takeover':
@@ -3465,7 +3420,6 @@ function menuSheet(){
     '<button class="btn" id="mPawn">말 모양 바꾸기</button>' +
     '<button class="btn" id="mFlat">' + (store.flat ? '판 기울여 보기 (3D)' : '위에서 판 보기 (평면)') + '</button>' +
     '<button class="btn" id="mFast">' + (store.fast ? '움직임 보통 빠르기로' : '움직임 빠르게') + '</button>' +
-    '<button class="btn" id="mCam">' + (store.cam === false ? '말 따라 확대하기 켜기' : '말 따라 확대하기 끄기') + '</button>' +
     (MODE === 'online' ? '<button class="btn" id="mLeave">방 나가기</button>' : (SERVER ? '<button class="btn" id="mOn">온라인으로 하기</button>' : '')) +
     '<button class="btn" id="mClose">닫기</button></div>';
   var sh = openSheet(html, 'menu');
@@ -3475,7 +3429,6 @@ function menuSheet(){
   on('mInstall', function(){ closeSheet(); doInstall(); });
   on('mPawn', pawnSheet);
   on('mFlat', function(){ store.flat = !store.flat; save(); applyFlat(); closeSheet(); });
-  on('mCam', function(){ store.cam = store.cam === false; save(); if (store.cam === false) camReset(); closeSheet(); toast(store.cam === false ? '말 따라 확대하기를 껐어요' : '말이 움직이면 그쪽으로 확대해요'); });
   on('mFast', function(){ store.fast = !store.fast; SPEED = store.fast ? 0.55 : 1; save(); closeSheet(); toast(store.fast ? '움직임을 빠르게 했어요' : '보통 빠르기로 했어요'); });
   on('mOn', function(){ setupSheet('online'); });
   on('mClose', closeSheet);
@@ -3733,7 +3686,7 @@ function demoBoard(){ // 시작 화면 뒤에 보일 빈 판
   MODE = 'local'; DEMO = true; buildToks(); showDice([5, 2]); render(); setNews('주사위를 굴려 세계를 한 바퀴!');
 }
 
-function applyFlat(){ camReset(); $('stage').classList.toggle('flat', !!store.flat); setTimeout(function(){ sizeDice(); }, 50); }
+function applyFlat(){ $('stage').classList.toggle('flat', !!store.flat); setTimeout(function(){ sizeDice(); }, 50); }
 (function boot(){
   drawBoard(); applyFlat(); buildDice(); soundIcon(); showDice([5, 2]);
   $('bSnd').onclick = function(){ store.sound = !store.sound; save(); soundIcon(); if (store.sound) snd('coin'); };
@@ -3744,7 +3697,7 @@ function applyFlat(){ camReset(); $('stage').classList.toggle('flat', !!store.fl
     if ((e.key === ' ' || e.key === 'Enter') && !SHEET && (keySkip || deedSkip)){ e.preventDefault(); (keySkip || deedSkip)(); return; }
     if (e.key === ' ' && !SHEET && G && G.phase === 'roll' && myTurn() && !busy && document.activeElement === document.body){ e.preventDefault(); act({ type:'roll' }); }
   });
-  window.addEventListener('resize', function(){ camReset(); sizeDice(); if (G) placeToks(); });
+  window.addEventListener('resize', function(){ sizeDice(); if (G) placeToks(); });
   var hashCode = (location.hash.match(/^#(\d{6})$/) || [])[1];
   var lastRoom = lsGet('wt-room');
   if (SERVER && lastRoom && store.netName && (!hashCode || hashCode === lastRoom)){ demoBoard(); goOnline(lastRoom, store.netName); return; }
